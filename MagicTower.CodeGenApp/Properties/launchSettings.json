@@ -1,0 +1,8 @@
+﻿{
+  "profiles": {
+    "MagicTower.CodeGenApp": {
+      "commandName": "Project",
+      "commandLineArgs": ""
+    }
+  }
+}

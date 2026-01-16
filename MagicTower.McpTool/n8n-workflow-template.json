@@ -1,0 +1,114 @@
+{
+  "name": "MagicTower AI Game Master",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "magic-tower-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-start",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract request data\nconst message = $json.body.message;\nconst characterId = $json.body.characterId || null;\nconst gameSessionId = $json.body.gameSessionId || null;\nconst conversationHistory = $json.body.conversationHistory || [];\n\n// If characterId exists, fetch current game state\nlet currentGameState = null;\n\nif (characterId) {\n  try {\n    // This would typically be done with HTTP Request nodes\n    // For now, we'll structure the data for the AI\n    currentGameState = {\n      character: {\n        id: characterId,\n        // These would be fetched from the backend\n      },\n      gameSession: gameSessionId ? {\n        id: gameSessionId,\n        // These would be fetched from the backend\n      } : null\n    };\n  } catch (error) {\n    console.error('Failed to load game state:', error);\n  }\n}\n\n// Prepare the context for the AI\nreturn {\n  message: message,\n  characterId: characterId,\n  gameSessionId: gameSessionId,\n  conversationHistory: conversationHistory,\n  currentGameState: currentGameState\n};"
+      },
+      "id": "prepare-context",
+      "name": "Prepare Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "model": "gemini-1.5-pro",
+        "systemPrompt": "Du bist der Game Master für das MagicTower Rollenspiel. Deine Aufgabe ist es, ein spannendes und immersives Spielerlebnis zu schaffen.\\n\\n### Deine Verantwortlichkeiten:\\n1. **Charakter Management**: Erstelle und verwalte Charaktere basierend auf Spielerwünschen\\n2. **Spiel-Steuerung**: Starte und verwalte Spielsessions mit passender Schwierigkeit\\n3. **Kampf-Koordination**: Generiere Gegner und führe Kampfrunden durch\\n4. **Story-Telling**: Erzähle eine fesselnde Geschichte mit atmosphärischen Beschreibungen\\n5. **State Tracking**: Verfolge IMMER den aktuellen Spielzustand und gib ihn strukturiert zurück\\n\\n### Verfügbare Tools:\\n- `create_character`: Erstellt einen neuen Charakter (Warrior/Archer/Druid)\\n- `start_game_session`: Startet eine neue Session mit Schwierigkeit (10/20/30)\\n- `generate_enemy`: Generiert einen Gegner für die aktuelle Etage\\n- `execute_combat_action`: Führt eine Kampfaktion aus\\n- `heal_character`: Heilt den Charakter gegen Gold\\n- `buy_special_attacks`: Kauft Spezialattacken gegen Gold\\n\\n### WICHTIG: Game State Tracking\\n\\nNach JEDER Tool-Verwendung MUSST du den aktuellen Spielzustand strukturiert zurückgeben:\\n\\n```json\\n{\\n  \\\"character\\\": {\\n    \\\"id\\\": null,\\n    \\\"name\\\": \\\"Charaktername\\\",\\n    \\\"characterClass\\\": 1,\\n    \\\"level\\\": 1,\\n    \\\"maxHealth\\\": 120,\\n    \\\"currentHealth\\\": 120,\\n    \\\"attackPower\\\": 15,\\n    \\\"gold\\\": 0,\\n    \\\"specialAttackLevel\\\": 1\\n  },\\n  \\\"gameSession\\\": {\\n    \\\"id\\\": null,\\n    \\\"characterId\\\": null,\\n    \\\"difficulty\\\": 10,\\n    \\\"currentFloor\\\": 1,\\n    \\\"isCompleted\\\": false\\n  },\\n  \\\"currentEnemy\\\": {\\n    \\\"type\\\": \\\"Ritter\\\",\\n    \\\"race\\\": \\\"Ork\\\",\\n    \\\"level\\\": 1,\\n    \\\"health\\\": 150,\\n    \\\"maxHealth\\\": 150,\\n    \\\"attackPower\\\": 8,\\n    \\\"weapon\\\": \\\"Schwert\\\",\\n    \\\"isBoss\\\": false,\\n    \\\"hasSpecialAttack\\\": false\\n  },\\n  \\\"actionsPerformed\\\": [\\\"create_character\\\", \\\"start_game_session\\\"]\\n}\\n```\\n\\n### Regeln:\\n1. ? IMMER den vollständigen Game State nach Tool-Nutzung zurückgeben\\n2. ? Berechne Health, Gold, Level korrekt nach jedem Kampf\\n3. ? Erhöhe currentFloor nach jedem Sieg\\n4. ? Setze currentEnemy auf null wenn kein Kampf aktiv\\n5. ? Beschreibe Kämpfe atmosphärisch und spannend\\n6. ? Boss-Kämpfe (alle 5 Etagen) besonders hervorheben\\n7. ? Spieler-Entscheidungen respektieren\\n8. ? NIEMALS Spielwerte erfinden - nutze nur Tool-Ergebnisse\\n9. ? NIEMALS den State vergessen zurückzugeben\\n\\nSei kreativ, spannend und fair! Viel Erfolg als Game Master! ??",
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "message": "={{ $json.message }}"
+            }
+          ]
+        },
+        "mcpServers": {
+          "values": [
+            {
+              "url": "http://localhost:5292/mcp",
+              "name": "MagicTower MCP Server"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.9,
+          "maxTokens": 2048
+        }
+      },
+      "id": "gemini-ai",
+      "name": "Gemini AI (MCP)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract AI response\nconst aiResponse = $json.response || $json.output || $json.message || '';\n\n// Parse game state update from AI response\nconst jsonMatch = aiResponse.match(/```json\\n([\\s\\S]*?)\\n```/);\nlet gameStateUpdate = null;\n\nif (jsonMatch) {\n  try {\n    gameStateUpdate = JSON.parse(jsonMatch[1]);\n    console.log('Parsed game state update:', gameStateUpdate);\n  } catch (e) {\n    console.error('Failed to parse game state:', e);\n  }\n}\n\n// Clean response text (remove JSON blocks)\nconst cleanResponse = aiResponse.replace(/```json[\\s\\S]*?```/g, '').trim();\n\n// Get original request data\nconst originalData = $('Prepare Context').first().json;\n\nreturn {\n  aiResponseText: cleanResponse,\n  gameStateUpdate: gameStateUpdate,\n  characterId: originalData.characterId,\n  gameSessionId: originalData.gameSessionId\n};"
+      },
+      "id": "parse-response",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// This node should make HTTP requests to persist the game state\\n// For this template, we'll structure the data\\n\\nconst gameStateUpdate = $json.gameStateUpdate;\\nlet characterId = $json.characterId;\\nlet gameSessionId = $json.gameSessionId;\\n\\nif (!gameStateUpdate) {\\n  return {\\n    characterId: characterId,\\n    gameSessionId: gameSessionId,\\n    aiResponseText: $json.aiResponseText,\\n    updated: false\\n  };\\n}\\n\\n// TODO: Implement HTTP Request nodes to:\\n// 1. POST /api/GameMcp/character/create (if new character)\\n// 2. PUT /api/GameMcp/character/{id}/update (if updating)\\n// 3. POST /api/GameMcp/session/start (if new session)\\n// 4. PUT /api/GameMcp/session/{id}/update (if updating)\\n\\n// For now, pass through the data\\nreturn {\\n  characterId: characterId,\\n  gameSessionId: gameSessionId,\\n  aiResponseText: $json.aiResponseText,\\n  gameStateUpdate: gameStateUpdate,\\n  updated: true\\n};"
+      },
+      "id": "persist-state",
+      "name": "Persist Game State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\\n  response: $json.aiResponseText,\\n  characterId: $json.characterId,\\n  gameSessionId: $json.gameSessionId,\\n  gameState: $json.gameStateUpdate\\n}) }}"
+      },
+      "id": "webhook-response",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Prepare Context", "type": "main", "index": 0 }]]
+    },
+    "Prepare Context": {
+      "main": [[{ "node": "Gemini AI (MCP)", "type": "main", "index": 0 }]]
+    },
+    "Gemini AI (MCP)": {
+      "main": [[{ "node": "Parse AI Response", "type": "main", "index": 0 }]]
+    },
+    "Parse AI Response": {
+      "main": [[{ "node": "Persist Game State", "type": "main", "index": 0 }]]
+    },
+    "Persist Game State": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1.0.0",
+  "meta": {
+    "instanceId": "magic-tower-game"
+  },
+  "tags": []
+}
