@@ -1,4 +1,5 @@
-﻿using ModelContextProtocol.Server;
+﻿
+using ModelContextProtocol.Server;
 using System.ComponentModel;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,10 +34,11 @@ public class GameMcpTools
     private static readonly Random _random = new Random();
 
     [McpServerTool(Name = "create_character")]
-    [Description("Creates a new character with the specified name and class. Character classes: 1=Warrior (120 HP, 15 ATK), 2=Archer (100 HP, 12 ATK), 3=Druid (110 HP, 10 ATK). Returns the created character with initial stats, level 1, 0 gold, and 3 special attacks.")]
+    [Description("Creates a new character with the specified name and class. Character classes: 1=Warrior (120 HP, 15 ATK), 2=Archer (100 HP, 12 ATK), 3=Druid (110 HP, 10 ATK). Returns the created character with initial stats, level 1, 0 gold, and 3 special attacks. If no weapon name is provided, a random weapon will be generated.")]
     public string CreateCharacter(
         [Description("Character name")] string name,
-        [Description("Character class: 1=Warrior, 2=Archer, 3=Druid")] int characterClass)
+        [Description("Character class: 1=Warrior, 2=Archer, 3=Druid")] int characterClass,
+        [Description("Character weapon name (optional, if null a random weapon will be generated)")] string? weaponName = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             return "Fehler: Name darf nicht leer sein.";
@@ -82,6 +84,9 @@ public class GameMcpTools
             _ => "Unknown"
         };
 
+        // Generate weapon
+        var weapon = CreateWeaponObject(characterClass, 1, weaponName);
+
         return $"✨ Charakter erstellt!\n" +
                $"Name: {character.Name}\n" +
                $"Klasse: {className}\n" +
@@ -90,18 +95,25 @@ public class GameMcpTools
                $"Angriffskraft: {character.AttackPower}\n" +
                $"Gold: {character.Gold}\n" +
                $"Spezialattacken: {character.AvailableSpecialAttacks}\n" +
-               $"Spezial-Multiplikator: {character.SpecialAttackMultiplier}x";
+               $"Spezial-Multiplikator: {character.SpecialAttackMultiplier}x\n" +
+               $"\n⚔️ Startwaffe:\n" +
+               $"Name: {weapon.Name}\n" +
+               $"Typ: {weapon.Type}\n" +
+               $"Schaden: +{weapon.DamageBonus}\n" +
+               $"Level: {weapon.UpgradeLevel}\n" +
+               $"Verkaufswert: {weapon.SellValue} Gold\n" +
+               $"Upgrade-Kosten: {weapon.UpgradeCost} Gold";
     }
 
     [McpServerTool(Name = "start_game_session")]
     [Description("Starts a new game session with the specified difficulty. Can be called with or without a character - if no character exists yet, the AI can create one first. Difficulty levels: 10=Easy (10 floors), 20=Medium (20 floors), 30=Hard (30 floors). Returns session info with starting floor 1 and total floors based on difficulty.")]
     public string StartGameSession(
-        [Description("Difficulty: 10=Easy, 20=Medium, 30=Hard")] int difficulty,
+        [Description("Difficulty: 5=Easy, 10=Medium, 15=Hard")] int difficulty,
         [Description("Character name (optional, leave empty if no character exists yet)")] string? characterName = null,
         [Description("Character level (optional)")] int? characterLevel = null)
     {
-        if (difficulty != 10 && difficulty != 20 && difficulty != 30)
-            return "Fehler: Ungültige Schwierigkeit. Wähle 10=Easy, 20=Medium oder 30=Hard.";
+        if (difficulty != 5 && difficulty != 10 && difficulty != 15)
+            return "Fehler: Ungültige Schwierigkeit. Wähle 5=Easy, 10=Medium oder 15=Hard.";
 
         var session = new GameSession
         {
@@ -113,9 +125,9 @@ public class GameMcpTools
 
         string difficultyName = difficulty switch
         {
-            10 => "Easy (10 Etagen)",
-            20 => "Medium (20 Etagen)",
-            30 => "Hard (30 Etagen)",
+            5 => "Easy (5 Etagen)",
+            10 => "Medium (10 Etagen)",
+            15 => "Hard (15 Etagen)",
             _ => "Unknown"
         };
 
@@ -132,65 +144,45 @@ public class GameMcpTools
     }
 
     [McpServerTool(Name = "generate_enemy")]
-    [Description("Generates a new enemy for the current floor based on character level. Boss fights occur every 5 floors with 1.5x stronger stats. Returns enemy type, race, level, health, attack power, weapon, IsBoss flag, and HasSpecialAttack flag.")]
-    public string GenerateEnemy(
-        [Description("Character level")] int characterLevel,
-        [Description("Current floor number")] int currentFloor)
+    public string GenerateEnemy(int characterLevel, int currentFloor)
     {
-        if (characterLevel < 1 || characterLevel > 100)
-            return "Fehler: Charakter-Level muss zwischen 1 und 100 liegen.";
-
-        if (currentFloor < 1)
-            return "Fehler: Etage muss mindestens 1 sein.";
-
         bool isBoss = currentFloor % 5 == 0;
-        double bossMultiplier = isBoss ? 1.5 : 1.0;
-        bool hasSpecialAttack = _random.Next(0, 100) < 30 || isBoss; // 30% chance or always for boss
+        double bossMultiplier = isBoss ? 1.35 : 1.0;
+        bool hasSpecialAttack = isBoss || _random.Next(0, 100) < 25;
 
-        var enemy = new Enemy
-        {
-            Type = GetRandomEnemyType(),
-            Race = GetRandomRace(),
-            Level = characterLevel,
-            Health = (int)((_random.Next(characterLevel * 10, characterLevel * 20)) * bossMultiplier),
-            AttackPower = (int)((_random.Next(characterLevel * 1, characterLevel * 10)) * bossMultiplier),
-            Weapon = GetRandomWeapon(),
-            IsBoss = isBoss,
-            HasSpecialAttack = hasSpecialAttack
-        };
+        int attack = (int)(_random.Next(characterLevel * 2, characterLevel * 5 + 1) * bossMultiplier);
+        int health = (int)(_random.Next(characterLevel * 18, characterLevel * 26 + 1) * bossMultiplier);
 
-        string enemyInfo = isBoss ? "👑 BOSS KAMPF!" : "⚔️ Neuer Gegner!";
-        string specialInfo = hasSpecialAttack ? "\n🔥 ACHTUNG: Hat Spezialattacke!" : "";
-
-        return $"{enemyInfo}\n" +
-               $"Etage: {currentFloor}\n" +
-               $"Gegner: {enemy.Race} {enemy.Type} (Level {enemy.Level})\n" +
-               $"Gesundheit: {enemy.Health} HP\n" +
-               $"Angriffskraft: {enemy.AttackPower}\n" +
-               $"Waffe: {enemy.Weapon}{specialInfo}";
+        return
+            $"⚔️ Gegner: {GetRandomRace()} {GetRandomEnemyType()} (Lvl {characterLevel})\n" +
+            $"HP: {health}\n" +
+            $"ATK: {attack}\n" +
+            $"Waffe: {GetRandomWeapon()}\n" +
+            $"Boss: {isBoss}\n" +
+            $"Special: {hasSpecialAttack}";
     }
 
     [McpServerTool(Name = "execute_combat_action")]
-    [Description("Executes a combat action (normal or special attack) against the current enemy. Calculates damage for both player and enemy. If enemy is defeated, awards gold (10-50 for normal, 50-150 for boss), level up chance, and possibly new weapons. Returns updated health, damage dealt, rewards, and whether to advance floor.")]
+    [Description("Executes a combat action (normal or special attack) against the current enemy. Calculates damage for both player and enemy. Handles rewards, level ups, weapon drops and floor progression.")]
     public string ExecuteCombatAction(
-        [Description("Character name")] string characterName,
-        [Description("Character level")] int characterLevel,
-        [Description("Character max health")] int characterMaxHealth,
-        [Description("Character current health")] int characterCurrentHealth,
-        [Description("Character attack power")] int characterAttackPower,
-        [Description("Character gold")] int characterGold,
-        [Description("Character available special attacks")] int availableSpecialAttacks,
-        [Description("Special attack multiplier (typically 1.5)")] double specialAttackMultiplier,
-        [Description("Use special attack (true) or normal attack (false)")] bool useSpecialAttack,
-        [Description("Enemy type (e.g., Ritter, König)")] string enemyType,
-        [Description("Enemy race (e.g., Ork, Goblin)")] string enemyRace,
-        [Description("Enemy level")] int enemyLevel,
-        [Description("Enemy current health")] int enemyHealth,
-        [Description("Enemy attack power")] int enemyAttackPower,
-        [Description("Enemy weapon")] string enemyWeapon,
-        [Description("Is boss enemy")] bool isBoss,
-        [Description("Enemy has special attack ability")] bool hasSpecialAttack,
-        [Description("Current floor number")] int currentFloor)
+    string characterName,
+    int characterLevel,
+    int characterMaxHealth,
+    int characterCurrentHealth,
+    int characterAttackPower,
+    int characterGold,
+    int availableSpecialAttacks,
+    double specialAttackMultiplier,
+    bool useSpecialAttack,
+    string enemyType,
+    string enemyRace,
+    int enemyLevel,
+    int enemyHealth,
+    int enemyAttackPower,
+    string enemyWeapon,
+    bool isBoss,
+    bool hasSpecialAttack,
+    int currentFloor)
     {
         if (characterCurrentHealth <= 0)
             return "Fehler: Charakter ist besiegt und kann nicht kämpfen.";
@@ -201,100 +193,121 @@ public class GameMcpTools
         if (useSpecialAttack && availableSpecialAttacks <= 0)
             return "Fehler: Keine Spezialattacken verfügbar!";
 
-        // Calculate player damage
-        int playerDamage = useSpecialAttack 
-            ? (int)(characterAttackPower * specialAttackMultiplier * _random.Next(5, 11))
-            : _random.Next(characterAttackPower * 5, characterAttackPower * 11);
+        // ─────────────────────────────
+        // DAMAGE CALCULATION (BALANCED)
+        // ─────────────────────────────
 
-        // Enemy uses special attack randomly if available
-        bool enemyUsesSpecial = hasSpecialAttack && _random.Next(0, 100) < 40; // 40% chance
+        int playerDamage = useSpecialAttack
+            ? (int)(characterAttackPower * specialAttackMultiplier)
+              + _random.Next(0, characterAttackPower / 2 + 1)
+            : _random.Next(
+                (int)(characterAttackPower * 0.9),
+                (int)(characterAttackPower * 1.4) + 1
+              );
+
+        bool enemyUsesSpecial = hasSpecialAttack && _random.Next(0, 100) < 15;
+
         int enemyDamage = enemyUsesSpecial
-            ? (int)(enemyAttackPower * 1.5 * _random.Next(5, 11))
-            : _random.Next(enemyAttackPower * 5, enemyAttackPower * 11);
+            ? (int)(enemyAttackPower * 1.4)
+              + _random.Next(0, enemyAttackPower / 2 + 1)
+            : _random.Next(
+                (int)(enemyAttackPower * 0.8),
+                (int)(enemyAttackPower * 1.3) + 1
+              );
 
         int newCharacterHealth = Math.Max(0, characterCurrentHealth - enemyDamage);
         int newEnemyHealth = Math.Max(0, enemyHealth - playerDamage);
-        int newAvailableSpecialAttacks = useSpecialAttack ? availableSpecialAttacks - 1 : availableSpecialAttacks;
+        int newAvailableSpecialAttacks = useSpecialAttack
+            ? availableSpecialAttacks - 1
+            : availableSpecialAttacks;
 
-        string attackType = useSpecialAttack ? "🔥 SPEZIALATTACKE" : "⚔️ Normale Attacke";
-        string enemyAttackType = enemyUsesSpecial ? "🔥 Gegner SPEZIALATTACKE" : "⚔️ Gegner Attacke";
-        
-        string result = $"{attackType}!\n" +
-                       $"{characterName} verursacht {playerDamage} Schaden!\n" +
-                       $"{enemyAttackType}!\n" +
-                       $"{enemyRace} {enemyType} verursacht {enemyDamage} Schaden!\n\n" +
-                       $"{characterName}: {newCharacterHealth}/{characterMaxHealth} HP\n" +
-                       $"{enemyRace} {enemyType}: {newEnemyHealth}/{enemyHealth} HP\n" +
-                       $"Spezialattacken übrig: {newAvailableSpecialAttacks}";
+        // ─────────────────────────────
+        // COMBAT TEXT
+        // ─────────────────────────────
 
-        // Check combat outcome
+        string result =
+            $"{(useSpecialAttack ? "🔥 SPEZIALATTACKE" : "⚔️ Angriff")}!\n" +
+            $"{characterName} verursacht {playerDamage} Schaden.\n" +
+            $"{(enemyUsesSpecial ? "🔥 Gegner-Spezialangriff" : "⚔️ Gegner-Angriff")}!\n" +
+            $"{enemyRace} {enemyType} verursacht {enemyDamage} Schaden.\n\n" +
+            $"{characterName}: {newCharacterHealth}/{characterMaxHealth} HP\n" +
+            $"{enemyRace} {enemyType}: {newEnemyHealth}/{enemyHealth} HP\n" +
+            $"Spezialattacken übrig: {newAvailableSpecialAttacks}";
+
+        // ─────────────────────────────
+        // ENEMY DEFEATED
+        // ─────────────────────────────
+
         if (newEnemyHealth == 0)
         {
-            int goldReward = isBoss ? _random.Next(50, 151) : _random.Next(10, 51);
+            int goldReward = isBoss
+                ? _random.Next(50, 151)
+                : _random.Next(10, 51);
+
             int newGold = characterGold + goldReward;
-            bool levelUp = _random.Next(0, 100) < 40; // 40% chance
-            int newLevel = levelUp ? characterLevel + 1 : characterLevel;
+
+            bool levelUp = _random.Next(0, 100) < 40;
+            int newLevel = characterLevel;
             int newMaxHealth = characterMaxHealth;
             int newAttackPower = characterAttackPower;
 
             if (levelUp)
             {
+                newLevel++;
                 newMaxHealth += 10;
                 newAttackPower += 2;
             }
 
-            // Weapon drop chance
-            bool weaponDrop = _random.Next(0, 100) < (isBoss ? 60 : 20); // 60% boss, 20% normal
-            string weaponInfo = weaponDrop ? $"\n⚔️ Neue Waffe gefunden: {GetRandomWeapon()} (+{_random.Next(3, 8)} Schaden, Wert: {_random.Next(20, 101)} Gold)" : "";
+            bool weaponDrop = _random.Next(0, 100) < (isBoss ? 60 : 20);
+            string weaponInfo = weaponDrop
+                ? $"\n⚔️ Neue Waffe gefunden: {GetRandomWeapon()} " +
+                  $"(+{_random.Next(3, 8)} Schaden, Wert: {_random.Next(20, 101)} Gold)"
+                : "";
 
-            result += $"\n\n🏆 {characterName} ist siegreich!\n" +
-                     $"💰 Gold erhalten: +{goldReward} (Total: {newGold})\n" +
-                     $"Spezialattacken aufgefüllt: +3 (Total: {newAvailableSpecialAttacks + 3})";
+            result +=
+                $"\n\n🏆 {characterName} ist siegreich!\n" +
+                $"💰 Gold erhalten: +{goldReward} (Total: {newGold})\n" +
+                $"🔥 Spezialattacken aufgefüllt: +3 (Total: {newAvailableSpecialAttacks + 3})";
 
             if (levelUp)
-                result += $"\n⭐ LEVEL UP! {characterLevel} → {newLevel}\n" +
-                         $"   HP: {characterMaxHealth} → {newMaxHealth}\n" +
-                         $"   ATK: {characterAttackPower} → {newAttackPower}";
+            {
+                result +=
+                    $"\n⭐ LEVEL UP! {characterLevel} → {newLevel}\n" +
+                    $"HP: {characterMaxHealth} → {newMaxHealth}\n" +
+                    $"ATK: {characterAttackPower} → {newAttackPower}";
+            }
 
             result += weaponInfo;
             result += $"\n\n➡️ Weiter zur nächsten Etage: {currentFloor + 1}";
         }
+        // ─────────────────────────────
+        // PLAYER DEFEATED
+        // ─────────────────────────────
         else if (newCharacterHealth == 0)
         {
-            result += $"\n\n💀 {characterName} wurde besiegt!\n" +
-                     $"Spiel beendet auf Etage {currentFloor}.";
+            result +=
+                $"\n\n💀 {characterName} wurde besiegt!\n" +
+                $"Spiel beendet auf Etage {currentFloor}.";
         }
 
         return result;
     }
 
+
     [McpServerTool(Name = "heal_character")]
-    [Description("Heals the character by spending gold. Cost: 20 gold per heal. Restores 30% of max health. Returns new health and remaining gold.")]
-    public string HealCharacter(
-        [Description("Character name")] string characterName,
-        [Description("Character max health")] int characterMaxHealth,
-        [Description("Character current health")] int characterCurrentHealth,
-        [Description("Character gold")] int characterGold)
+    public string HealCharacter(string characterName, int characterMaxHealth, int characterCurrentHealth, int characterGold)
     {
-        const int healCost = 20;
-        if (characterGold < healCost)
-            return $"Fehler: Nicht genug Gold! Benötigt: {healCost}, Verfügbar: {characterGold}";
+        if (characterGold < 10)
+            return "Fehler: Nicht genug Gold.";
 
-        if (characterCurrentHealth >= characterMaxHealth)
-            return "Fehler: Charakter hat bereits volle Gesundheit!";
+        int heal = (int)(characterMaxHealth * (_random.Next(4,10)/10));
+        int newHealth = Math.Min(characterMaxHealth, characterCurrentHealth + heal);
 
-        int healAmount = (int)(characterMaxHealth * 0.3);
-        int newHealth = Math.Min(characterMaxHealth, characterCurrentHealth + healAmount);
-        int newGold = characterGold - healCost;
-
-        return $"💚 {characterName} wurde geheilt!\n" +
-               $"Heilung: +{healAmount} HP\n" +
-               $"Gesundheit: {characterCurrentHealth} → {newHealth}/{characterMaxHealth}\n" +
-               $"Gold: {characterGold} → {newGold} (-{healCost})";
+        return $"💚 {characterName} heilt sich um {newHealth} HP auf {characterCurrentHealth+newHealth}.";
     }
 
     [McpServerTool(Name = "buy_special_attacks")]
-    [Description("Purchases special attacks with gold. Cost: 30 gold for 2 special attacks. Returns new special attack count and remaining gold.")]
+    [Description("Purchases special attacks with gold. Cost: 10 gold for 2 special attacks. Returns new special attack count and remaining gold.")]
     public string BuySpecialAttacks(
         [Description("Character name")] string characterName,
         [Description("Character available special attacks")] int availableSpecialAttacks,
@@ -314,6 +327,69 @@ public class GameMcpTools
                $"Gold: {characterGold} → {newGold} (-{cost})";
     }
 
+    [McpServerTool(Name = "generate_weapon")]
+    [Description("Generates a weapon with all status values for the character. Returns weapon details including name, type, damage bonus, upgrade level, sell value, and upgrade cost.")]
+    public string GenerateWeapon(
+        [Description("Character class: 1=Warrior, 2=Archer, 3=Druid")] int characterClass,
+        [Description("Character level for scaling weapon stats")] int characterLevel,
+        [Description("Optional weapon name, if null a random name will be generated")] string? weaponName = null)
+    {
+        var weapon = CreateWeaponObject(characterClass, characterLevel, weaponName);
+
+        return $"⚔️ Waffe generiert!\n" +
+               $"Name: {weapon.Name}\n" +
+               $"Typ: {weapon.Type}\n" +
+               $"Schaden: +{weapon.DamageBonus}\n" +
+               $"Upgrade-Level: {weapon.UpgradeLevel}\n" +
+               $"Geeignet für: {GetClassNameFromInt(weapon.SuitableForClass)}\n" +
+               $"Verkaufswert: {weapon.SellValue} Gold\n" +
+               $"Upgrade-Kosten: {weapon.UpgradeCost} Gold";
+    }
+
+    [McpServerTool(Name = "get_reward")]
+    [Description("Generates a reward after defeating an enemy. Returns either gold (60% chance) or a new weapon with all stats (40% chance). Boss enemies have higher gold rewards and better weapon drops.")]
+    public string GetReward(
+        [Description("Character class: 1=Warrior, 2=Archer, 3=Druid")] int characterClass,
+        [Description("Character level for scaling rewards")] int characterLevel,
+        [Description("Whether the defeated enemy was a boss")] bool isBoss)
+    {
+        int rewardType = _random.Next(0, 100);
+        
+        // 60% chance for gold, 40% chance for weapon
+        if (rewardType < 60)
+        {
+            // Gold reward
+            int baseGold = isBoss ? 50 : 20;
+            int goldReward = _random.Next(baseGold, baseGold * 3 + 1) + (characterLevel * 5);
+            
+            return $"💰 Gold Belohnung!\n" +
+                   $"Erhalten: {goldReward} Gold\n" +
+                   $"Typ: {(isBoss ? "Boss-Belohnung" : "Standard-Belohnung")}";
+        }
+        else
+        {
+            // Weapon reward
+            var weapon = CreateWeaponObject(characterClass, characterLevel, null);
+            
+            // Boss weapons get a bonus
+            if (isBoss)
+            {
+                weapon.DamageBonus += _random.Next(3, 8);
+                weapon.SellValue += _random.Next(20, 51);
+            }
+            
+            return $"⚔️ Waffen-Belohnung!\n" +
+                   $"Gefunden: {weapon.Name}\n" +
+                   $"Typ: {weapon.Type}\n" +
+                   $"Schaden: +{weapon.DamageBonus}\n" +
+                   $"Upgrade-Level: {weapon.UpgradeLevel}\n" +
+                   $"Geeignet für: {GetClassNameFromInt(weapon.SuitableForClass)}\n" +
+                   $"Verkaufswert: {weapon.SellValue} Gold\n" +
+                   $"Upgrade-Kosten: {weapon.UpgradeCost} Gold\n" +
+                   $"Typ: {(isBoss ? "Boss-Drop" : "Standard-Drop")}";
+        }
+    }
+
     // Helper classes
     public class Character
     {
@@ -326,6 +402,18 @@ public class GameMcpTools
         public int Gold { get; set; }
         public double SpecialAttackMultiplier { get; set; }
         public int AvailableSpecialAttacks { get; set; }
+    }
+
+    public class Weapon
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public int DamageBonus { get; set; }
+        public int UpgradeLevel { get; set; }
+        public int SuitableForClass { get; set; }
+        public bool IsEquipped { get; set; }
+        public int SellValue { get; set; }
+        public int UpgradeCost { get; set; }
     }
 
     public class GameSession
@@ -365,5 +453,70 @@ public class GameMcpTools
     {
         string[] races = { "Ork", "Goblin", "Troll", "Wolf", "Drache", "Riese", "Hydra" };
         return races[_random.Next(races.Length)];
+    }
+
+    private Weapon CreateWeaponObject(int characterClass, int characterLevel, string? weaponName)
+    {
+        string weaponType = GetWeaponTypeForClass(characterClass);
+        string name = weaponName ?? $"{GetRandomWeaponPrefix()} {weaponType}";
+        
+        int baseDamage = characterClass switch
+        {
+            1 => 5,  // Warrior - highest base damage
+            2 => 4,  // Archer - medium base damage
+            3 => 3,  // Druid - lowest base damage
+            _ => 3
+        };
+        
+        int damageBonus = baseDamage + _random.Next(0, characterLevel + 1);
+        int upgradeLevel = 0;
+        int sellValue = 10 + (damageBonus * 5);
+        int upgradeCost = 50 + (characterLevel * 10);
+        
+        return new Weapon
+        {
+            Name = name,
+            Type = weaponType,
+            DamageBonus = damageBonus,
+            UpgradeLevel = upgradeLevel,
+            SuitableForClass = characterClass,
+            IsEquipped = true,
+            SellValue = sellValue,
+            UpgradeCost = upgradeCost
+        };
+    }
+
+    private string GetWeaponTypeForClass(int characterClass)
+    {
+        return characterClass switch
+        {
+            1 => GetRandomFromArray(new[] { "Schwert", "Axt", "Keule", "Speer" }),  // Warrior weapons
+            2 => GetRandomFromArray(new[] { "Bogen", "Armbrust", "Dolch" }),        // Archer weapons
+            3 => GetRandomFromArray(new[] { "Stab", "Zauberstab", "Dolch" }),       // Druid weapons
+            _ => "Schwert"
+        };
+    }
+
+    private string GetRandomWeaponPrefix()
+    {
+        string[] prefixes = { "Legendäres", "Episches", "Seltenes", "Magisches", "Verzaubertes", 
+                             "Uraltes", "Mystisches", "Göttliches", "Dunkles", "Heiliges" };
+        return prefixes[_random.Next(prefixes.Length)];
+    }
+
+    private string GetRandomFromArray(string[] array)
+    {
+        return array[_random.Next(array.Length)];
+    }
+
+    private string GetClassNameFromInt(int characterClass)
+    {
+        return characterClass switch
+        {
+            1 => "Warrior",
+            2 => "Archer",
+            3 => "Druid",
+            _ => "Unknown"
+        };
     }
 }
