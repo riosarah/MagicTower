@@ -1,0 +1,789 @@
+/* ============================================
+   RETRO GAME DESIGN - Magic Tower
+   ============================================ */
+   .Body{
+    z-index:-1;
+   }
+
+.game-chat-container {
+  position: relative;
+  margin-top:-2rem;
+  min-height: 50vh;  
+  height: 50vh;
+  width:100%;
+  color: white;
+  overflow:hidden;
+  display: flex;
+  flex-direction: column;
+  z-index:4;
+  /* Hintergrund wird jetzt auf Body gesetzt */
+}
+
+.game-chat-container > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* ============================================
+   ZORRO POPUP
+   ============================================ */
+.zorro-popup {
+  position: relative;
+  top: 20%;
+  left: 40%;
+  width:30%;
+  z-index: 9999;
+  /* text-align: center;
+  animation: zorroFadeIn 0.5s ease, zorroFadeOut 0.5s ease 1.5s forwards; */
+}
+
+.zorro-avatar {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.8));
+  animation: zorroFloat 2s ease-in-out infinite;
+}
+
+.zorro-speech-bubble {
+  margin-top: 1rem;
+  padding: 1rem 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1rem;
+  position: relative;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  max-width: 600px;
+  max-height: 300px;
+  overflow-y: auto;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.zorro-speech-bubble::before {
+  content: '';
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  /*transform: translateX(-50%);*/
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-bottom: 15px solid rgba(255, 255, 255, 0.95);
+}
+
+@keyframes zorroFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes zorroFadeOut {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+}
+
+@keyframes zorroFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* ============================================
+   CHARACTER & ENEMY DISPLAYS
+   ============================================ */
+.character-display {
+  position: fixed;
+  left: -20rem;
+  top: 20vh;
+  z-index: 100;
+  text-align: center;
+  animation: slideInLeft 0.5s ease;
+}
+
+.character-avatar {
+  width: 20rem;
+  height: 20rem;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 15px rgba(102, 126, 234, 0.8));
+  margin-top:-3rem;
+}
+
+.character-label {
+  margin: 0.5rem auto 0;
+  padding: 0.5rem 1rem;
+  margin-top:-0.5rem;
+  width: 20rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  
+  border-bottom-left-radius: 2rem;
+  border-bottom-right-radius: 2rem;
+  font-weight: bold;
+  font-size: 1rem;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+.enemy-display {
+  position: fixed;
+  right: -20rem;
+  top: -20vh;
+  z-index: 100;
+  text-align: center;
+  animation: slideInRight 0.5s ease;
+  
+}
+
+.enemy-avatar {
+ width: 20rem;
+  height: 20rem;
+  margin-top:-2rem;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 15px rgba(220, 53, 69, 0.8));
+  animation: enemyShake 0.5s ease;
+}
+
+.enemy-label {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  
+  border-bottom-left-radius: 2rem;
+  border-bottom-right-radius: 2rem;
+  font-weight: bold;
+  font-size: 1rem;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+  margin-top:-0.5rem;
+  width:20rem;
+  margin-left:39.5rem;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes enemyShake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+/* ============================================
+   RETRO BUTTONS
+   ============================================ */
+.retro-button {
+  position: relative;
+  padding: 15px 30px;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  image-rendering: pixelated;
+  box-shadow: 
+    0 8px 0 0 #8b4513,
+    0 12px 15px rgba(0, 0, 0, 0.5);
+}
+
+.retro-button-menu {
+  background: linear-gradient(180deg, #ff9f5a 0%, #ff7f3f 50%, #ff6f2f 100%);
+  color: white;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.retro-button-action {
+  background: linear-gradient(180deg, #ff5a5a 0%, #ff3f3f 50%, #ff2f2f 100%);
+  color: white;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.retro-button:hover {
+  transform: translateY(2px);
+  box-shadow: 
+    0 6px 0 0 #8b4513,
+    0 8px 10px rgba(0, 0, 0, 0.5);
+}
+
+.retro-button:active {
+  transform: translateY(8px);
+  box-shadow: 
+    0 0 0 0 #8b4513,
+    0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.retro-button-text {
+  display: block;
+  letter-spacing: 2px;
+}
+
+/* ============================================
+   GAME HEADER
+   ============================================ */
+.game-header {
+  padding: 1rem 2rem;
+  background: rgba(0, 0, 0, 0.8);
+  border-bottom: 4px solid #667eea;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+  flex-shrink: 0;
+}
+
+.game-title {
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  font-size: 1.5rem;
+  text-shadow: 3px 3px 0 #667eea, 5px 5px 10px rgba(0, 0, 0, 0.5);
+  color: white;
+}
+
+/* ============================================
+   BATTLE STATUS BOXES
+   ============================================ */
+.battle-status-container {
+  position: fixed;
+  top: 30rem;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.status-card {
+  position: fixed;
+  background: rgba(0, 0, 0, 0.85);
+  border: 3px solid #667eea;
+  border-radius: 12px;
+  padding: 0.75rem;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+  top:14rem;
+  width: 18rem;
+  max-height: 35rem;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
+.character-card {
+  left: 10px;
+  transform: translateY(-50%);
+  border-color: #667eea;
+}
+
+.enemy-card {
+  right: 10px;
+  transform: translateY(-50%);
+  border-color: #dc3545;
+}
+
+.status-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.status-header h3 {
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.status-header h3 .badge {
+  font-size: 0.65rem;
+}
+
+.level-badge {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #333;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.status-body {
+  padding: 0.25rem 0;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0;
+  font-size: 0.75rem;
+  gap: 0.5rem;
+}
+
+.stat-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: bold;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.stat-label i {
+  font-size: 0.8rem;
+}
+
+.stat-value {
+  color: white;
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.health-bar-container {
+  flex: 1;
+  margin-left: 0.5rem;
+  position: relative;
+  height: 18px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+  min-width: 80px;
+}
+
+.health-bar {
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 13px;
+}
+
+.health-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  font-size: 0.65rem;
+}
+
+/* ============================================
+   MAIN CONTENT ROW
+   ============================================ */
+.main-content-row {
+  padding: 1rem;
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  margin-top: 0rem;
+  font-size: 1rem;
+  z-index: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.main-content-row .row {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ============================================
+   INVENTORY PANEL
+   ============================================ */
+.inventory-panel {
+  background: rgba(0, 0, 0, 0.8);
+  border: 3px solid #2d2e69;
+  border-radius: 15px;
+  padding: 1rem;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  height:24rem;
+    margin-top:-1rem;
+}
+
+.inventory-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.inventory-header {
+  background: linear-gradient(135deg, #6694ea, #4b4fa2);
+  padding: 0.75rem 1rem;
+  font-weight: bold;
+  font-size: 1rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.inventory-body {
+  padding: 0.2rem;
+}
+
+.tower-progress {
+  text-align: center;
+}
+
+.floor-display {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.current-floor {
+  color: #667eea;
+  font-size: 1rem;
+}
+
+.floor-separator {
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 0.5rem;
+}
+
+.max-floor {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.gold-display {
+  text-align: center;
+}
+
+.gold-amount {
+  display: block;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #ffd700;
+  margin-top: 0.5rem;
+}
+
+.weapons-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.weapon-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.weapon-item.equipped {
+  border-color: #28a745;
+  background: rgba(40, 167, 69, 0.1);
+}
+
+.weapon-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.weapon-details {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.weapon-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ============================================
+   CHAT PANEL
+   ============================================ */
+.chat-panel {
+  background: rgba(0, 0, 0, 0.9);
+  opacity:0.9;
+  border: 3px solid #061023;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  height: 40vh;
+  overflow: hidden;
+  height:24rem;
+  margin-top:-1rem;
+}
+
+.chat-header {
+  background: linear-gradient(135deg, #83e981, #688d6a);
+  padding: 0.75rem 1rem;
+  border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px 12px 0 0;
+  flex-shrink: 0;
+}
+
+.chat-header h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.chat-messages {
+  opacity:1;
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.4);
+  min-height: 0;
+}
+
+.message-wrapper {
+  opacity:1;
+  margin-bottom: 1.5rem;
+  animation: fadeInUp 0.3s ease;
+}
+
+.user-message {
+  opacity:1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ai-message {
+  opacity:1;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.message-bubble {
+  opacity:1;
+  max-width: 70%;
+  padding: 0.75rem 1rem;
+  border-radius: 15px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+.user-message .message-bubble {
+  background: linear-gradient(135deg, #669dea, #4b61a2);
+  color: white;
+}
+
+.ai-message .message-bubble {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.message-role {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Text-to-Speech Button */
+.tts-button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.tts-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+}
+
+.tts-button:active {
+  transform: scale(0.95);
+}
+
+.tts-button i {
+  font-size: 1rem;
+}
+
+.message-content {
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.typing-indicator {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.typing-indicator span {
+  width: 10px;
+  height: 10px;
+  background: #667eea;
+  border-radius: 50%;
+  animation: typing 1.4s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  30% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+}
+
+.chat-input-container {
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.6);
+  border-top: 3px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0 0 12px 12px;
+  flex-shrink: 0;
+}
+
+.chat-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border-radius: 10px;
+}
+
+.chat-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.chat-input:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #667eea;
+  color: white;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  outline: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea, #4b52a2);
+  border: none;
+  font-weight: bold;
+  padding: 0.75rem 2rem;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5568d3, #3f528f);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+.chat-messages::-webkit-scrollbar,
+.weapons-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track,
+.weapons-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb,
+.weapons-list::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.6);
+  border-radius: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover,
+.weapons-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 126, 234, 0.8);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  .character-display,
+  .enemy-display {
+    position: static;
+    margin: 1rem auto;
+  }
+
+  .character-avatar,
+  .enemy-avatar {
+    width: 100px;
+    height: 100px;
+  }
+
+  .retro-button {
+    font-size: 10px;
+    padding: 10px 20px;
+  }
+
+  .game-title {
+    font-size: 1rem;
+  }
+
+  .chat-panel {
+    height: 400px;
+  }
+}

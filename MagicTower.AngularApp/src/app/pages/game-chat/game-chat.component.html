@@ -1,0 +1,281 @@
+<div class="game-chat-container">
+  
+  <!-- Zorro Popup (2 Sekunden bei neuer AI-Nachricht) -->
+  <div class="zorro-popup" *ngIf="showZorroPopup">
+    <img src="assets/images/Zorro.png" alt="Zorro" class="zorro-avatar">
+    <!-- <div class="zorro-speech-bubble" [innerHTML]="zorroMessage"></div> -->
+  </div>
+
+  <!-- Character Image (dauerhaft links) -->
+  <div class="character-display" *ngIf="characterImage && !showZorroPopup">
+    <img [src]="characterImage" alt="Character" class="character-avatar">
+    <div class="character-label" *ngIf="gameState?.character">
+      {{ gameState?.character?.name }}
+    </div>
+  </div>
+
+  <!-- Enemy Image (rechts im Kampf) -->
+  <div class="enemy-display" *ngIf="enemyImage && gameState?.currentEnemy && !showZorroPopup">
+    <img [src]="enemyImage" alt="Enemy" class="enemy-avatar">
+    <div class="enemy-label">
+      {{ gameState?.currentEnemy?.displayName || gameState?.currentEnemy?.race }}
+    </div>
+  </div>
+
+  <!-- Battle Status Boxes - Character and Enemy -->
+  <div class="battle-status-container" *ngIf="gameState">
+    <!-- Character Status (left) -->
+    <div class="status-card character-card">
+          <div class="status-header">
+            <h3 class="mb-1">
+              {{ gameState.character.name }}
+              <span class="badge bg-primary ms-2">{{ getClassNameInGerman(gameState.character.className) }}</span>
+            </h3>
+            <span class="level-badge">Level {{ gameState.character.level }}</span>
+          </div>
+          
+          <div class="status-body">
+            <div class="stat-row">
+              <span class="stat-label">
+                <i class="bi bi-heart-fill text-danger"></i> Gesundheit:
+              </span>
+              <div class="health-bar-container">
+                <div 
+                  class="health-bar" 
+                  [class]="getHealthBarClass(gameState.character.currentHealth, gameState.character.maxHealth)"
+                  [style.width.%]="getHealthPercentage(gameState.character.currentHealth, gameState.character.maxHealth)">
+                </div>
+                <span class="health-text">
+                  {{ gameState.character.currentHealth }} / {{ gameState.character.maxHealth }}
+                </span>
+              </div>
+            </div>
+
+            <div class="stat-row">
+              <span class="stat-label">
+                <i class="bi bi-lightning-fill text-warning"></i> Angriffskraft:
+              </span>
+              <span class="stat-value">{{ gameState.character.totalAttackPower }}</span>
+            </div>
+
+            <div class="stat-row">
+              <span class="stat-label">
+                <i class="bi bi-star-fill text-info"></i> Spezialangriff:
+              </span>
+              <span class="stat-value">{{ gameState.character.specialAttackLevel }}</span>
+            </div>
+          </div>
+        </div>
+
+    <!-- Enemy Status (right) -->
+    <div class="status-card enemy-card">
+          <div class="status-header">
+            <h3 class="mb-1">
+              {{ gameState.currentEnemy?.displayName || gameState.currentEnemy?.race + ' ' + gameState.currentEnemy?.type }}
+              <span class="badge bg-danger ms-2" *ngIf="gameState.currentEnemy?.isBoss">BOSS</span>
+            </h3>
+            <span class="level-badge">Level {{ gameState.currentEnemy?.level }}</span>
+          </div>
+          
+          <div class="status-body" *ngIf="gameState.currentEnemy">
+            <div class="stat-row">
+              <span class="stat-label">
+                <i class="bi bi-heart-fill text-danger"></i> Gesundheit:
+              </span>
+              <div class="health-bar-container">
+                <div 
+                  class="health-bar" 
+                  [class]="getHealthBarClass(gameState.currentEnemy.health, gameState.currentEnemy.maxHealth)"
+                  [style.width.%]="getHealthPercentage(gameState.currentEnemy.health, gameState.currentEnemy.maxHealth)">
+                </div>
+                <span class="health-text">
+                  {{ gameState.currentEnemy.health }} / {{ gameState.currentEnemy.maxHealth }}
+                </span>
+              </div>
+            </div>
+
+            <div class="stat-row">
+              <span class="stat-label">
+                <i class="bi bi-lightning-fill text-warning"></i> Angriffskraft:
+              </span>
+              <span class="stat-value">{{ gameState.currentEnemy.attackPower }}</span>
+            </div>
+
+            <div class="stat-row" *ngIf="gameState.currentEnemy.weapon">
+              <span class="stat-label">
+                <i class="bi bi-hammer text-secondary"></i> Waffe:
+              </span>
+              <span class="stat-value">{{ gameState.currentEnemy.weapon }}</span>
+            </div>
+
+            <div class="stat-row" *ngIf="gameState.currentEnemy.hasSpecialAttack">
+              <span class="badge bg-warning">
+                <i class="bi bi-exclamation-triangle"></i> Hat Spezialangriff
+              </span>
+            </div>
+          </div>
+
+          <div class="status-body text-center text-muted" *ngIf="!gameState.currentEnemy">
+            <i class="bi bi-emoji-smile fs-1"></i>
+            <p class="mb-0 mt-2">Aktuell kein Gegner</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <!-- Main Content Row - Inventory Panel (Left) + Chat Panel (Right) -->
+  <div class="main-content-row">
+    <div class="row g-3">
+      <!-- Left: Inventory Panel -->
+      <div class="col-lg-3" *ngIf="gameState">
+        <div class="inventory-panel">
+          <!-- Tower Progress -->
+          <div class="inventory-card" *ngIf="gameState.gameSession">
+            <div class="inventory-header">
+              <i class="bi bi-building"></i> Turmfortschritt
+            </div>
+            <div class="inventory-body">
+              <div class="tower-progress">
+                <div class="floor-display">
+                  <span class="current-floor">{{ gameState.gameSession.currentFloor }}</span>
+                  <span class="floor-separator">/</span>
+                  <span class="max-floor">{{ gameState.gameSession.maxFloor }}</span>
+                </div>
+                <div class="progress mt-2" style="height: 10px;">
+                  <div 
+                    class="progress-bar bg-success" 
+                    [style.width.%]="getTowerProgress()">
+                  </div>
+                </div>
+                <div class="mt-2">
+                  <span class="badge" 
+                        [class.bg-success]="gameState.gameSession.difficulty === 5"
+                        [class.bg-warning]="gameState.gameSession.difficulty === 10"
+                        [class.bg-danger]="gameState.gameSession.difficulty === 15">
+                    {{ getDifficultyLabel(gameState.gameSession.difficulty) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gold Display -->
+          <div class="inventory-card" *ngIf="gameState.character">
+            <div class="inventory-header">
+              <i class="bi bi-coin"></i> Gold
+            </div>
+            <div class="inventory-body">
+              <div class="gold-display">
+                <i class="bi bi-coin text-warning fs-1"></i>
+                <span class="gold-amount">{{ gameState.character.gold }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Weapons Inventory -->
+          <div class="inventory-card" *ngIf="gameState.character.weapons && gameState.character.weapons.length > 0">
+            <div class="inventory-header">
+              <i class="bi bi-hammer"></i> Waffen
+            </div>
+            <div class="inventory-body">
+              <div class="weapons-list">
+                <div 
+                  *ngFor="let weapon of gameState.character?.weapons" 
+                  class="weapon-item"
+                  [class.equipped]="weapon.isEquipped">
+                  <div class="weapon-header">
+                    <strong>{{ weapon.name }}</strong>
+                    <span class="badge bg-success" *ngIf="weapon.isEquipped">Ausgerüstet</span>
+                  </div>
+                  <div class="weapon-details">
+                    <span class="badge bg-secondary">{{ weapon.type }}</span>
+                    <span class="badge bg-danger">
+                      <i class="bi bi-lightning-fill"></i> {{ weapon.totalDamage }}
+                    </span>
+                    <span class="badge bg-primary" *ngIf="weapon.upgradeLevel > 0">
+                      +{{ weapon.upgradeLevel }}
+                    </span>
+                  </div>
+                  <div class="weapon-meta">
+                    <small>Verkaufswert: {{ weapon.sellValue }} Gold</small>
+                    <small *ngIf="weapon.upgradeCost">Upgrade: {{ weapon.upgradeCost }} Gold</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Chat Panel -->
+      <div class="col-lg-9" [class.offset-lg-3]="!gameState">
+        <div class="chat-panel">
+          <!-- Chat Header
+          <div class="chat-header">
+            <h4 class="mb-0">
+              <i ></i> Der Pfad zum Turm
+            </h4>
+          </div> -->
+
+          <!-- Chat Messages -->
+          <div class="chat-messages" #chatMessages>
+            <div 
+              *ngFor="let msg of conversationHistory; let i = index" 
+              class="message-wrapper"
+              [class.user-message]="msg.role === 'user'"
+              [class.ai-message]="msg.role === 'assistant'">
+              <div class="message-bubble">
+                <div class="message-role">
+                  <i class="bi" [class.bi-person-fill]="msg.role === 'user'" 
+                               [class.bi-robot]="msg.role === 'assistant'"></i>
+                  {{ msg.role === 'user' ? 'Du' : 'Zorro' }}
+                  
+                  <!-- Text-to-Speech Button für KI-Nachrichten -->
+                  <button 
+                    *ngIf="msg.role === 'assistant'"
+                    class="btn btn-sm btn-outline-light ms-2 tts-button"
+                    (click)="speakMessage(msg.content, i)"
+                    [title]="isSpeaking(i) ? 'Stoppen' : 'Vorlesen'">
+                    <i class="bi" [class.bi-volume-up-fill]="!isSpeaking(i)" 
+                                   [class.bi-stop-fill]="isSpeaking(i)"></i>
+                  </button>
+                </div>
+                <div class="message-content" [innerHTML]="msg.content | lineBreaks"></div>
+              </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div class="message-wrapper ai-message" *ngIf="isLoading">
+              <div class="message-bubble">
+                <div class="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Input -->
+          <div class="chat-input-container">
+            <div class="input-group">
+              <input 
+                type="text" 
+                class="form-control chat-input" 
+                [(ngModel)]="currentMessage"
+                (keyup.enter)="sendMessage()"
+                [disabled]="isLoading"
+                placeholder="Schreibe deine Nachricht an Zorro...">
+              <button 
+                class="btn btn-primary" 
+                (click)="sendMessage()"
+                [disabled]="isLoading || !currentMessage.trim()">
+                <i class="bi bi-send-fill"></i> Senden
+              </button>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
