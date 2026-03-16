@@ -1,3 +1,4 @@
+#if GENERATEDCODE_ON
 //@CustomCode
 using MagicTower.Logic.Contracts;
 using MagicTower.Logic.Entities.Game;
@@ -594,3 +595,4 @@ namespace MagicTower.Logic.Modules
 
     #endregion
 }
+#endif
