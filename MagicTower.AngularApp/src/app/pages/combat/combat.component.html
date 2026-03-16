@@ -1,0 +1,313 @@
+<div class="combat-container">
+  <div class="container-fluid">
+    <!-- Loading Spinner -->
+    <div *ngIf="loading && !character" class="text-center py-5">
+      <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div *ngIf="gameOver" class="game-over-screen">
+      <div class="game-over-card">
+        <div *ngIf="victory" class="victory-content">
+          <i class="bi bi-trophy-fill victory-icon"></i>
+          <h1>{{ 'COMBAT.VICTORY' | translate }}</h1>
+          <p>{{ 'COMBAT.VICTORY_MESSAGE' | translate }}</p>
+        </div>
+        <div *ngIf="!victory" class="defeat-content">
+          <i class="bi bi-x-circle-fill defeat-icon"></i>
+          <h1>{{ 'COMBAT.DEFEAT' | translate }}</h1>
+          <p>{{ 'COMBAT.DEFEAT_MESSAGE' | translate }}</p>
+        </div>
+        <button class="btn btn-primary btn-lg" (click)="goHome()">
+          <i class="bi bi-house-fill"></i> {{ 'COMBAT.BACK_HOME' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Combat View -->
+    <div *ngIf="character && !gameOver" class="row">
+      <!-- Left Column: Character Stats -->
+      <div class="col-lg-3 mb-4">
+        <div class="card stats-card character-card shadow-lg">
+          <div class="card-header text-center">
+            <h4>
+              <i class="bi bi-person-fill"></i>
+              {{ character.name }}
+            </h4>
+            <small class="text-muted">{{ getClassDisplayName() }} - Level {{ character.level }}</small>
+          </div>
+          <div class="card-body">
+            <!-- Health Bar -->
+            <div class="stat-section">
+              <label>
+                <i class="bi bi-heart-fill text-danger"></i> 
+                {{ 'COMBAT.HEALTH' | translate }}
+              </label>
+              <div class="progress mb-2">
+                <div 
+                  class="progress-bar" 
+                  [ngClass]="getHealthBarClass(getHealthPercentage(character.health, character.maxHealth))"
+                  role="progressbar" 
+                  [style.width.%]="getHealthPercentage(character.health, character.maxHealth)">
+                  {{ character.health }}/{{ character.maxHealth }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stat-section">
+              <div class="stat-item">
+                <span class="stat-label">
+                  <i class="bi bi-lightning-fill text-warning"></i> 
+                  {{ 'COMBAT.ATTACK' | translate }}
+                </span>
+                <span class="stat-value">{{ character.attackPower }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">
+                  <i class="bi bi-star-fill text-info"></i> 
+                  {{ 'COMBAT.SPECIAL_ATTACK' | translate }}
+                </span>
+                <span class="stat-value">{{ character.specialAttackMultiplier }}x</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">
+                  <i class="bi bi-battery-charging"></i> 
+                  {{ 'COMBAT.SPECIAL_AVAILABLE' | translate }}
+                </span>
+                <span class="stat-value">{{ character.specialAttacksAvailable }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">
+                  <i class="bi bi-coin text-warning"></i> 
+                  {{ 'COMBAT.GOLD' | translate }}
+                </span>
+                <span class="stat-value">{{ character.gold }}</span>
+              </div>
+            </div>
+
+            <!-- Session Info -->
+            <div class="stat-section" *ngIf="session">
+              <div class="stat-item">
+                <span class="stat-label">
+                  <i class="bi bi-building"></i> 
+                  {{ 'COMBAT.CURRENT_FLOOR' | translate }}
+                </span>
+                <span class="stat-value">{{ session.currentFloor }}/{{ session.maxFloor }}</span>
+              </div>
+              <div class="progress mt-2">
+                <div 
+                  class="progress-bar bg-info" 
+                  role="progressbar" 
+                  [style.width.%]="(session.currentFloor / session.maxFloor) * 100">
+                </div>
+              </div>
+            </div>
+
+            <!-- Weapons -->
+            <div class="stat-section">
+              <label>
+                <i class="bi bi-bag-fill"></i> 
+                {{ 'COMBAT.WEAPONS' | translate }}
+              </label>
+              <div class="weapons-list">
+                <div *ngFor="let weapon of weapons" class="weapon-item">
+                  <div class="weapon-info">
+                    <strong [class.text-success]="weapon.isEquipped">
+                      {{ weapon.name }}
+                      <i *ngIf="weapon.isEquipped" class="bi bi-check-circle-fill"></i>
+                    </strong>
+                    <small class="d-block text-muted">
+                      +{{ weapon.damageBonus }} DMG | +{{ weapon.upgradeLevel }}
+                    </small>
+                  </div>
+                  <div class="weapon-actions" *ngIf="!weapon.isEquipped">
+                    <button 
+                      class="btn btn-sm btn-outline-primary" 
+                      (click)="upgradeWeapon(weapon.id)"
+                      [disabled]="weapon.upgradeLevel >= 5">
+                      <i class="bi bi-arrow-up"></i>
+                    </button>
+                    <button 
+                      class="btn btn-sm btn-outline-danger" 
+                      (click)="sellWeapon(weapon.id)">
+                      <i class="bi bi-cash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Middle Column: Combat Arena -->
+      <div class="col-lg-6 mb-4">
+        <div class="card combat-arena-card shadow-lg">
+          <div class="card-body">
+            <!-- Enemy Display -->
+            <div *ngIf="enemy" class="enemy-section">
+              <div class="enemy-card">
+                <div class="enemy-header" [class.boss-enemy]="enemy.isBoss">
+                  <h3>
+                    <i class="bi bi-shield-fill-exclamation"></i>
+                    {{ enemy.race }} {{ enemy.type }}
+                  </h3>
+                  <span *ngIf="enemy.isBoss" class="boss-badge">
+                    <i class="bi bi-crown-fill"></i> BOSS
+                  </span>
+                </div>
+                <div class="enemy-stats">
+                  <div class="stat-row">
+                    <span>
+                      <i class="bi bi-heart-fill text-danger"></i> 
+                      {{ 'COMBAT.HEALTH' | translate }}
+                    </span>
+                    <div class="progress flex-grow-1 mx-2">
+                      <div 
+                        class="progress-bar" 
+                        [ngClass]="getHealthBarClass(getHealthPercentage(enemy.health, enemy.maxHealth))"
+                        role="progressbar" 
+                        [style.width.%]="getHealthPercentage(enemy.health, enemy.maxHealth)">
+                        {{ enemy.health }}/{{ enemy.maxHealth }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="stat-row">
+                    <span>
+                      <i class="bi bi-lightning-fill text-warning"></i> 
+                      {{ 'COMBAT.ATTACK' | translate }}
+                    </span>
+                    <strong>{{ enemy.attackPower }}</strong>
+                  </div>
+                  <div class="stat-row">
+                    <span>
+                      <i class="bi bi-layer-forward"></i> 
+                      {{ 'COMBAT.LEVEL' | translate }}
+                    </span>
+                    <strong>{{ enemy.level }}</strong>
+                  </div>
+                  <div class="stat-row">
+                    <span>
+                      <i class="bi bi-hammer"></i> 
+                      {{ 'COMBAT.WEAPON' | translate }}
+                    </span>
+                    <strong>{{ enemy.weapon }}</strong>
+                  </div>
+                  <div class="stat-row" *ngIf="enemy.hasSpecialAttack">
+                    <span class="text-danger">
+                      <i class="bi bi-star-fill"></i> 
+                      {{ 'COMBAT.HAS_SPECIAL' | translate }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Combat Actions -->
+              <div class="combat-actions">
+                <button 
+                  class="btn btn-lg btn-danger action-btn"
+                  (click)="attack(false)"
+                  [disabled]="combatInProgress">
+                  <i class="bi bi-sword"></i>
+                  {{ 'COMBAT.NORMAL_ATTACK' | translate }}
+                </button>
+                <button 
+                  class="btn btn-lg btn-warning action-btn"
+                  (click)="attack(true)"
+                  [disabled]="combatInProgress || character.specialAttacksAvailable <= 0">
+                  <i class="bi bi-lightning-charge-fill"></i>
+                  {{ 'COMBAT.SPECIAL_ATTACK' | translate }}
+                </button>
+              </div>
+            </div>
+
+            <!-- No Enemy - Start Fight -->
+            <div *ngIf="!enemy && !loading" class="no-enemy-section text-center">
+              <i class="bi bi-door-open no-enemy-icon"></i>
+              <h3>{{ 'COMBAT.READY_FOR_BATTLE' | translate }}</h3>
+              <p class="lead">{{ 'COMBAT.NEXT_FLOOR_MESSAGE' | translate }}</p>
+              <button 
+                class="btn btn-primary btn-lg"
+                (click)="startFight()">
+                <i class="bi bi-play-fill"></i>
+                {{ 'COMBAT.START_FIGHT' | translate }}
+              </button>
+            </div>
+
+            <!-- Rewards Display -->
+            <div *ngIf="showRewards && rewards" class="rewards-section">
+              <div class="rewards-card">
+                <h3>
+                  <i class="bi bi-gift-fill"></i>
+                  {{ 'COMBAT.REWARDS' | translate }}
+                </h3>
+                <div class="rewards-list">
+                  <div *ngIf="rewards.goldEarned" class="reward-item">
+                    <i class="bi bi-coin text-warning"></i>
+                    <span>+{{ rewards.goldEarned }} Gold</span>
+                  </div>
+                  <div *ngIf="rewards.leveledUp" class="reward-item">
+                    <i class="bi bi-arrow-up-circle-fill text-success"></i>
+                    <span>Level {{ rewards.newLevel }}!</span>
+                  </div>
+                  <div *ngIf="rewards.newWeapon" class="reward-item">
+                    <i class="bi bi-bag-fill text-primary"></i>
+                    <span>{{ rewards.newWeapon.name }}</span>
+                  </div>
+                  <div *ngIf="rewards.specialAttackUpgraded" class="reward-item">
+                    <i class="bi bi-star-fill text-info"></i>
+                    <span>Special Attack {{ rewards.newSpecialMultiplier }}x</span>
+                  </div>
+                </div>
+                <button 
+                  class="btn btn-success btn-lg mt-3"
+                  (click)="continueAdventure()">
+                  <i class="bi bi-arrow-right-circle-fill"></i>
+                  {{ 'COMBAT.CONTINUE' | translate }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div *ngIf="loading" class="text-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Combat Log -->
+      <div class="col-lg-3 mb-4">
+        <div class="card combat-log-card shadow-lg">
+          <div class="card-header">
+            <h5>
+              <i class="bi bi-journal-text"></i>
+              {{ 'COMBAT.COMBAT_LOG' | translate }}
+            </h5>
+          </div>
+          <div class="card-body p-0">
+            <div class="combat-log-content">
+              <div *ngFor="let log of combatLog" class="log-entry">
+                {{ log }}
+              </div>
+              <div *ngIf="combatLog.length === 0" class="text-center text-muted p-3">
+                {{ 'COMBAT.NO_ACTIONS_YET' | translate }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Back Button -->
+        <button class="btn btn-secondary w-100 mt-3" (click)="goHome()">
+          <i class="bi bi-arrow-left"></i>
+          {{ 'COMBAT.BACK_HOME' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
