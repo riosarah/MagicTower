@@ -1,3 +1,4 @@
+
 //@CustomCode
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -67,3 +68,4 @@ namespace MagicTower.Logic.Entities.Game
         #endregion Navigation properties
     }
 }
+
