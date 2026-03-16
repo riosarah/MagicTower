@@ -6,6 +6,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <DefineConstants>ACCOUNT_OFF;IDINT_ON;IDLONG_OFF;IDGUID_OFF;ROWVERSION_OFF;EXTERNALGUID_OFF;POSTGRES_OFF;SQLSERVER_OFF;SQLITE_ON;DOCKER_OFF;DEVELOP_ON;DBOPERATION_ON;GENERATEDCODE_ON</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
 	  <PackageReference Include="ModelContextProtocol" Version="0.5.0-preview.1" />
 	  <PackageReference Include="ModelContextProtocol.AspnetCore" Version="0.5.0-preview.1" />
