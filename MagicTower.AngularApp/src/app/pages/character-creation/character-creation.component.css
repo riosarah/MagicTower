@@ -1,0 +1,257 @@
+.character-creation-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 3rem 0;
+}
+
+.creation-header {
+  color: white;
+  margin-bottom: 2rem;
+  animation: fadeInDown 0.8s ease;
+}
+
+.creation-header h1 {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.creation-header .lead {
+  font-size: 1.3rem;
+  opacity: 0.9;
+}
+
+.card {
+  border: none;
+  border-radius: 15px;
+  animation: fadeIn 1s ease;
+}
+
+.card-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+.step-number {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 40px;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+/* Class Cards */
+.class-card {
+  background: white;
+  border: 3px solid #e9ecef;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  height: 100%;
+}
+
+.class-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.class-card.selected {
+  border-color: #667eea;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.class-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.class-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.class-description {
+  color: #6c757d;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  min-height: 60px;
+}
+
+.class-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 1rem;
+}
+
+.class-stats .stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-weight: bold;
+}
+
+.class-stats .stat i {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.selection-indicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 2rem;
+  color: #28a745;
+  animation: scaleIn 0.3s ease;
+}
+
+/* Difficulty Cards */
+.difficulty-card {
+  background: white;
+  border: 3px solid #e9ecef;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  height: 100%;
+}
+
+.difficulty-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.difficulty-card.selected {
+  border-color: #667eea;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.difficulty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.difficulty-card h5 {
+  font-weight: bold;
+  color: #333;
+}
+
+/* Summary Card */
+.summary-card {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  border: 2px solid #667eea;
+}
+
+.summary-content {
+  padding: 1rem;
+}
+
+.summary-content strong {
+  color: #667eea;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.summary-content p {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0;
+}
+
+/* Action Buttons */
+.action-buttons {
+  margin: 2rem 0;
+}
+
+.action-buttons .btn {
+  min-width: 200px;
+  font-size: 1.1rem;
+  padding: 0.75rem 2rem;
+  border-radius: 50px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.action-buttons .btn-primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+}
+
+.action-buttons .btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+}
+
+.action-buttons .btn-secondary {
+  background: #6c757d;
+  border: none;
+}
+
+.action-buttons .btn-secondary:hover:not(:disabled) {
+  background: #5a6268;
+  transform: translateY(-2px);
+}
+
+/* Animations */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .creation-header h1 {
+    font-size: 2rem;
+  }
+
+  .class-card, .difficulty-card {
+    margin-bottom: 1rem;
+  }
+
+  .action-buttons .btn {
+    display: block;
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+}

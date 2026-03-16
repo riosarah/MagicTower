@@ -1,0 +1,156 @@
+<div class="character-creation-container">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <!-- Header -->
+        <div class="creation-header text-center mb-4">
+          <h1>
+            <i class="bi bi-person-plus-fill"></i>
+            {{ 'CHARACTER_CREATION.TITLE' | translate }}
+          </h1>
+          <p class="lead">{{ 'CHARACTER_CREATION.SUBTITLE' | translate }}</p>
+        </div>
+
+        <!-- Error Message -->
+        <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+          <i class="bi bi-exclamation-triangle-fill"></i> {{ errorMessage }}
+          <button type="button" class="btn-close" (click)="errorMessage = ''" aria-label="Close"></button>
+        </div>
+
+        <!-- Step 1: Character Name -->
+        <div class="card mb-4 shadow">
+          <div class="card-body">
+            <h3 class="card-title">
+              <span class="step-number">1</span>
+              {{ 'CHARACTER_CREATION.NAME_STEP' | translate }}
+            </h3>
+            <div class="form-group">
+              <label for="characterName" class="form-label">
+                {{ 'CHARACTER_CREATION.NAME_LABEL' | translate }}
+              </label>
+              <input 
+                type="text" 
+                class="form-control form-control-lg" 
+                id="characterName"
+                [(ngModel)]="characterName"
+                [placeholder]="'CHARACTER_CREATION.NAME_PLACEHOLDER' | translate"
+                maxlength="50">
+              <small class="form-text text-muted">{{ characterName.length }}/50</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Character Class Selection -->
+        <div class="card mb-4 shadow">
+          <div class="card-body">
+            <h3 class="card-title">
+              <span class="step-number">2</span>
+              {{ 'CHARACTER_CREATION.CLASS_STEP' | translate }}
+            </h3>
+            <div class="row">
+              <div 
+                *ngFor="let charClass of characterClasses" 
+                class="col-md-4 mb-3">
+                <div 
+                  class="class-card"
+                  [class.selected]="selectedClass === charClass.id"
+                  (click)="selectClass(charClass.id)">
+                  <div class="class-icon" [style.color]="charClass.color">
+                    <i [class]="charClass.icon"></i>
+                  </div>
+                  <h4 class="class-name">{{ charClass.name }}</h4>
+                  <p class="class-description">{{ charClass.description }}</p>
+                  <div class="class-stats">
+                    <div class="stat">
+                      <i class="bi bi-heart-fill text-danger"></i>
+                      <span>{{ charClass.health }} HP</span>
+                    </div>
+                    <div class="stat">
+                      <i class="bi bi-lightning-fill text-warning"></i>
+                      <span>{{ charClass.attack }} ATK</span>
+                    </div>
+                  </div>
+                  <div class="selection-indicator" *ngIf="selectedClass === charClass.id">
+                    <i class="bi bi-check-circle-fill"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Difficulty Selection -->
+        <div class="card mb-4 shadow">
+          <div class="card-body">
+            <h3 class="card-title">
+              <span class="step-number">3</span>
+              {{ 'CHARACTER_CREATION.DIFFICULTY_STEP' | translate }}
+            </h3>
+            <div class="row">
+              <div 
+                *ngFor="let level of difficultyLevels" 
+                class="col-md-4 mb-3">
+                <div 
+                  class="difficulty-card"
+                  [class.selected]="difficulty === level.value"
+                  (click)="difficulty = level.value">
+                  <div class="difficulty-icon" [style.color]="level.color">
+                    <i [class]="level.icon"></i>
+                  </div>
+                  <h5>{{ level.label }}</h5>
+                  <div class="selection-indicator" *ngIf="difficulty === level.value">
+                    <i class="bi bi-check-circle-fill"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary & Actions -->
+        <div class="card mb-4 shadow summary-card" *ngIf="characterName && selectedClass">
+          <div class="card-body">
+            <h3 class="card-title">
+              <i class="bi bi-clipboard-check"></i>
+              {{ 'CHARACTER_CREATION.SUMMARY' | translate }}
+            </h3>
+            <div class="summary-content">
+              <div class="row">
+                <div class="col-md-4">
+                  <strong>{{ 'CHARACTER_CREATION.NAME_LABEL' | translate }}:</strong>
+                  <p>{{ characterName }}</p>
+                </div>
+                <div class="col-md-4">
+                  <strong>{{ 'CHARACTER_CREATION.CLASS_LABEL' | translate }}:</strong>
+                  <p>{{ getSelectedClassInfo()?.name }}</p>
+                </div>
+                <div class="col-md-4">
+                  <strong>{{ 'CHARACTER_CREATION.DIFFICULTY_LABEL' | translate }}:</strong>
+                  <p>{{ difficulty }} {{ 'CHARACTER_CREATION.FLOORS' | translate }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons text-center">
+          <button 
+            class="btn btn-secondary btn-lg me-3" 
+            (click)="cancel()"
+            [disabled]="loading">
+            <i class="bi bi-arrow-left"></i> {{ 'CHARACTER_CREATION.CANCEL' | translate }}
+          </button>
+          <button 
+            class="btn btn-primary btn-lg" 
+            (click)="createCharacter()"
+            [disabled]="!characterName || !selectedClass || loading">
+            <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <i *ngIf="!loading" class="bi bi-play-fill"></i>
+            {{ loading ? ('CHARACTER_CREATION.CREATING' | translate) : ('CHARACTER_CREATION.START_ADVENTURE' | translate) }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
