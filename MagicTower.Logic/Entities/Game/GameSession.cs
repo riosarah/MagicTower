@@ -1,3 +1,4 @@
+
 //@CustomCode
 using System.ComponentModel.DataAnnotations.Schema;
 using MagicTower.Logic.Contracts;
@@ -45,6 +46,12 @@ namespace MagicTower.Logic.Entities.Game
         /// Gets or sets the session completion time.
         /// </summary>
         public DateTime? CompletedAt { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the current enemy state as JSON string.
+        /// Stores the active enemy during combat so it persists across page reloads.
+        /// </summary>
+        public string? CurrentEnemyState { get; set; }
 
         #region Navigation properties
         /// <summary>
@@ -56,6 +63,11 @@ namespace MagicTower.Logic.Entities.Game
         /// Gets or sets the list of defeated enemies.
         /// </summary>
         public List<DefeatedEnemy> DefeatedEnemies { get; internal set; } = [];
+        
+        /// <summary>
+        /// Gets or sets the list of chat messages for this session.
+        /// </summary>
+        public List<ChatMessage> ChatMessages { get; internal set; } = [];
         #endregion Navigation properties
 
         public GameSession()
@@ -67,3 +79,4 @@ namespace MagicTower.Logic.Entities.Game
         }
     }
 }
+
