@@ -1,0 +1,115 @@
+<div class="home-container">
+  <div class="hero-section">
+    <div class="hero-content">
+      <h1 class="game-title">
+        Magic Tower
+      </h1>
+      <p class="game-subtitle">Ein textbasiertes Adventure-Rollenspiel</p>
+      <p class="game-description">
+        Wähle deinen Charakter, durchquere den magischen Turm und stelle dich mächtigen Gegnern!
+      </p>
+    </div>
+  </div>
+
+  <div class="container mt-5">
+    <div class="row justify-content-center">
+      
+      <!-- Chat-basiertes Gameplay (PRIMÄR) -->
+      <div class="col-md-6 mb-4">
+        <div class="card   chat-game-card">
+          <div class="card-body text-center">
+            
+            <!-- Hauptbutton: Neuer Chat -->
+            <button class="retro-button retro-button-action btn-lg mb-3 w-100" (click)="startNewChatGame()">
+              <span class="retro-button-text">Neues Abenteuer starten</span>
+            </button>
+
+            <!-- Loading Spinner -->
+            <div *ngIf="loading" class="spinner-border text-info my-3" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+
+            <!-- Bestehende Spielsessions für Chat -->
+            <div *ngIf="!loading && sessions.length > 0" class="mt-4">
+              <hr class="my-3">
+              <p class="small text-muted mb-2">
+                <i class="bi bi-collection-play"></i> Oder bestehende Spielsession fortsetzen:
+              </p>
+              <div class="list-group character-select-list">
+                <button 
+                  *ngFor="let session of sessions" 
+                  class="list-group-item list-group-item-action character-item-chat"
+                  (click)="startChatGameplay(session)">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="character-info-detailed">
+                      <div class="character-name">
+                        <i class="bi bi-person-fill"></i>
+                        <strong>{{ session.characterName || 'Charakter #' + session.characterId }}</strong>
+                      </div>
+                      <div class="character-stats-small">
+                        <span class="badge bg-secondary me-1" *ngIf="session.characterClass">
+                          {{ getClassDisplayName(session.characterClass) }}
+                        </span>
+                        <span class="badge bg-primary me-1">
+                          Etage {{ session.currentFloor }}/{{ session.maxFloor }}
+                        </span>
+                        <span class="badge bg-info me-1">
+                          <i class="bi bi-trophy-fill"></i> Schwierigkeit: {{ session.difficulty }}
+                        </span>
+                        <span class="badge" [class.bg-success]="session.isCompleted" [class.bg-warning]="!session.isCompleted">
+                          {{ session.isCompleted ? 'Abgeschlossen' : 'Aktiv' }}
+                        </span>
+                      </div>
+                    </div>
+                    <i class="bi bi-play-circle-fill text-info fs-4"></i>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="!loading && sessions.length === 0" class="mt-3">
+              <p class="text-muted small">
+                <i class="bi bi-info-circle"></i> Noch keine Spielsessions vorhanden. Starte dein erstes Abenteuer!
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      
+
+   <!--  Features Section
+    <div class="features-section mt-5">
+      <div class="row">
+        <div class="col-md-3 col-sm-6 mb-4">
+          <div class="feature-card text-center">
+            <i class="bi bi-people-fill feature-icon"></i>
+            <h4>3 Charakterklassen</h4>
+            <p>Warrior, Archer, Druid</p>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-4">
+          <div class="feature-card text-center">
+            <i class="bi bi-building feature-icon"></i>
+            <h4>Turm-System</h4>
+            <p>10/20/30 Stockwerke</p>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-4">
+          <div class="feature-card text-center">
+            <i class="bi bi-lightning-fill feature-icon"></i>
+            <h4>Kampfsystem</h4>
+            <p>Normal- & Spezialangriffe</p>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-4">
+          <div class="feature-card text-center">
+            <i class="bi bi-trophy-fill feature-icon"></i>
+            <h4>Boss-Kämpfe</h4>
+            <p>Alle 5 Stockwerke</p>
+          </div>
+        </div>
+      </div>
+    </div> -->
+  </div>
+</div>
