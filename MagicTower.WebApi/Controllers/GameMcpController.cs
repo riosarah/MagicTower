@@ -1,3 +1,4 @@
+#if GENERATEDCODE_ON
 //@CustomCode
 using Microsoft.AspNetCore.Mvc;
 using MagicTower.Logic.Contracts;
@@ -5,6 +6,7 @@ using MagicTower.Logic.Modules;
 using MagicTower.Logic.Entities.Game;
 using MagicTower.WebApi.Models;
 using MagicTower.WebApi.Contracts;
+using MagicTower.WebApi.Extensions;
 using MagicTower.Common.Contracts.DTOs;
 using CharacterClass = MagicTower.Common.Models.Game.CharacterClass;
 using Difficulty = MagicTower.Common.Models.Game.Difficulty;
@@ -101,7 +103,7 @@ namespace MagicTower.WebApi.Controllers
                     
                     var tempCharacter = new Character
                     {
-                        Name = "TempHero",
+                        Name = "Held",
                         Class = CharacterClass.Warrior,
                         Level = 1,
                         MaxHealth = 100,
@@ -141,17 +143,14 @@ namespace MagicTower.WebApi.Controllers
                 }
 
                 // Prepare n8n request using N8nRequestDto
+                // NOTE: ConversationHistory is NOT sent - n8n tracks chat history via SessionId in its own database
                 var n8nRequest = new N8nRequestDto
                 {
                     Message = request.Message,
                     SessionId = gameSessionIdForN8n.ToString(),  // ALWAYS set - guaranteed to be valid
                     CharacterId = characterIdForN8n,
                     GameSessionId = gameSessionIdForN8n,
-                    ConversationHistory = request.ConversationHistory?.Select(ch => new ChatMessageDto
-                    {
-                        Role = ch.Role,
-                        Content = ch.Content
-                    }).ToList() ?? new List<ChatMessageDto>(),
+                    ConversationHistory = new List<ChatMessageDto>(),  // Empty - n8n manages history via SessionId
                     GameState = gameState != null ? MapToN8nGameStateDto(gameState) : null
                 };
 
@@ -301,17 +300,137 @@ namespace MagicTower.WebApi.Controllers
                 }
 
                 // Update Character and GameSession if AI made changes
+                // CRITICAL: MCP Tools update their own state but DON'T update our database
+                // We must sync the changes from n8nResponse.GameState back to our DB!
+                if (n8nResponse.GameState?.Character != null)
+                {
+                    Console.WriteLine("=== SYNCING CHARACTER STATE FROM N8N TO DB ===");
+                    var character = await context.CharacterSet.GetByIdAsync(characterIdForN8n);
+                    if (character != null)
+                    {
+                        // Sync all character stats from n8n response to database
+                        character.Name = n8nResponse.GameState.Character.Name;
+                        character.Class = (CharacterClass)n8nResponse.GameState.Character.CharacterClass;
+                        character.Level = n8nResponse.GameState.Character.Level;
+                        character.MaxHealth = n8nResponse.GameState.Character.MaxHealth;
+                        character.CurrentHealth = n8nResponse.GameState.Character.CurrentHealth;
+                        character.AttackPower = n8nResponse.GameState.Character.AttackPower;
+                        character.SpecialAttackLevel = n8nResponse.GameState.Character.SpecialAttackLevel;
+                        character.Gold = n8nResponse.GameState.Character.Gold;
+                        
+                        Console.WriteLine($"Updating Character {character.Id} in DB:");
+                        Console.WriteLine($"  Name: {character.Name}");
+                        Console.WriteLine($"  Class: {character.Class}");
+                        Console.WriteLine($"  Level: {character.Level}");
+                        Console.WriteLine($"  HP: {character.CurrentHealth}/{character.MaxHealth}");
+                        Console.WriteLine($"  ATK: {character.AttackPower}");
+                        Console.WriteLine($"  Gold: {character.Gold}");
+                        Console.WriteLine($"  Special Attacks: {character.SpecialAttackLevel}");
+                        
+                        await context.CharacterSet.UpdateAsync(character.Id, character);
+                        await context.SaveChangesAsync();
+                    }
+                }
+                
+                // Also update GameSession if present
+                if (n8nResponse.GameState?.GameSession != null)
+                {
+                    Console.WriteLine("=== SYNCING GAME SESSION STATE FROM N8N TO DB ===");
+                    var session = await context.GameSessionSet.GetByIdAsync(gameSessionIdForN8n);
+                    if (session != null)
+                    {
+                        session.CurrentFloor = n8nResponse.GameState.GameSession.CurrentFloor;
+                        session.IsCompleted = n8nResponse.GameState.GameSession.IsCompleted;
+                        
+                        // CRITICAL: Save or clear CurrentEnemy state
+                        if (n8nResponse.GameState.CurrentEnemy != null)
+                        {
+                            // Save enemy to database
+                            var enemyDto = new EnemyDto
+                            {
+                                Type = n8nResponse.GameState.CurrentEnemy.Type,
+                                Race = n8nResponse.GameState.CurrentEnemy.Race,
+                                Level = n8nResponse.GameState.CurrentEnemy.Level,
+                                Health = n8nResponse.GameState.CurrentEnemy.Health,
+                                MaxHealth = n8nResponse.GameState.CurrentEnemy.MaxHealth,
+                                AttackPower = n8nResponse.GameState.CurrentEnemy.AttackPower,
+                                Weapon = n8nResponse.GameState.CurrentEnemy.Weapon,
+                                IsBoss = n8nResponse.GameState.CurrentEnemy.IsBoss,
+                                HasSpecialAttack = n8nResponse.GameState.CurrentEnemy.HasSpecialAttack
+                            };
+                            session.SaveCurrentEnemy(enemyDto);
+                            Console.WriteLine($"  Saved CurrentEnemy: {enemyDto.Race} {enemyDto.Type} (HP: {enemyDto.Health}/{enemyDto.MaxHealth})");
+                        }
+                        else
+                        {
+                            // Clear enemy from database
+                            session.SaveCurrentEnemy(null);
+                            Console.WriteLine($"  Cleared CurrentEnemy (combat ended)");
+                        }
+                        
+                        Console.WriteLine($"Updating GameSession {session.Id} in DB:");
+                        Console.WriteLine($"  Current Floor: {session.CurrentFloor}/{session.MaxFloor}");
+                        Console.WriteLine($"  Completed: {session.IsCompleted}");
+                        
+                        await context.GameSessionSet.UpdateAsync(session.Id, session);
+                        await context.SaveChangesAsync();
+                    }
+
+                    // CRITICAL: Save chat messages to database for history tracking
+                    // This enables chat history retrieval via GET /api/GameSessions/{id}/with-chat
+                    if (session != null)
+                    {
+                        // Get the next sequence number for user message
+                        var chatMessageSet = context.ChatMessageSet;
+                        var allMessages = await chatMessageSet.GetAllAsync();
+                        var sessionMessages = allMessages.Where(m => m.GameSessionId == gameSessionIdForN8n).ToList();
+                        int nextSequenceNumber = sessionMessages.Any() 
+                            ? sessionMessages.Max(m => m.SequenceNumber) + 1 
+                            : 1;
+
+                        // Save user message
+                        var userMessage = new Logic.Entities.Game.ChatMessage
+                        {
+                            GameSessionId = gameSessionIdForN8n,
+                            Message = request.Message,
+                            IsAiMessage = false,
+                            SentAt = DateTime.UtcNow,
+                            SequenceNumber = nextSequenceNumber
+                        };
+                        await chatMessageSet.AddAsync(userMessage);
+                        Console.WriteLine($"Saved user message to DB (GameSession {gameSessionIdForN8n}, Seq: {nextSequenceNumber})");
+
+                        // Save AI response
+                        var aiMessage = new Logic.Entities.Game.ChatMessage
+                        {
+                            GameSessionId = gameSessionIdForN8n,
+                            Message = n8nResponse.Response,
+                            IsAiMessage = true,
+                            SentAt = DateTime.UtcNow,
+                            SequenceNumber = nextSequenceNumber + 1
+                        };
+                        await chatMessageSet.AddAsync(aiMessage);
+                        Console.WriteLine($"Saved AI response to DB (GameSession {gameSessionIdForN8n}, Seq: {nextSequenceNumber + 1})");
+                        
+                        await context.SaveChangesAsync();
+                    }
+                }
+                
+                // Legacy support: Also handle GameStateUpdate if provided
                 if (n8nResponse.GameStateUpdate != null)
                 {
                     await UpdateEntitiesFromN8nResponse(context, n8nResponse.GameStateUpdate, characterIdForN8n, gameSessionIdForN8n);
                 }
 
                 // Refresh game state after AI actions
+                // NOTE: BuildGameStateAsync now loads CurrentEnemy from database, so no need to manually set it
                 WebApiGameStateDto? updatedGameState = null;
                 if (request.CharacterId.HasValue)
                 {
                     updatedGameState = await BuildGameStateAsync(context, request.CharacterId.Value, request.GameSessionId);
                 }
+
+               
 
                 var chatResponse = new ChatResponse
                 {
@@ -550,6 +669,14 @@ namespace MagicTower.WebApi.Controllers
                 if (session != null)
                 {
                     gameState.GameSession = MapGameSessionToDto(session);
+                    
+                    // Load CurrentEnemy from database if it exists
+                    var currentEnemy = session.LoadCurrentEnemy();
+                    if (currentEnemy != null)
+                    {
+                        gameState.CurrentEnemy = currentEnemy;
+                        Console.WriteLine($"Loaded CurrentEnemy from DB: {currentEnemy.Race} {currentEnemy.Type} (HP: {currentEnemy.Health}/{currentEnemy.MaxHealth})");
+                    }
                 }
             }
 
@@ -1430,6 +1557,11 @@ namespace MagicTower.WebApi.Controllers
         #endregion
     }
 }
+#endif
+
+
+
+
 
 
 
