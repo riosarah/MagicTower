@@ -2,87 +2,87 @@
 
 # MagicTower
 
-MagicTower ist ein textbasiertes Fantasy-Abenteuer, das sich wie eine Reise durch einen alten, lebendigen Turm anfühlt. Hinter jeder Tür warten neue Gegner, Beute, Entscheidungen und kurze erzählerische Momente, während ein KI-gestützter Game Master das Abenteuer begleitet. Der Spieler führt einen Helden Stockwerk für Stockwerk nach oben, überlebt Kämpfe, verbessert Ausrüstung und versucht, die Spitze des Turms zu erreichen.
+MagicTower is a text-based fantasy adventure that feels like a journey through an ancient, living tower. Behind every door, new enemies, loot, decisions, and short narrative moments await, while an AI-assisted Game Master accompanies the adventure. The player guides a hero floor by floor upward, survives battles, upgrades equipment, and tries to reach the top of the tower.
 
-## Spielidee
+## Game Concept
 
-Im Zentrum steht ein leichtgewichtiges RPG-System mit drei Charakterklassen, mehreren Schwierigkeitsgraden und einem rundenbasierten Kampffluss. Das Spiel verbindet klassische Tower-Crawler-Elemente mit moderner Webtechnik und einer KI-Integration für Chat- und Story-Interaktionen.
+At its core is a lightweight RPG system with three character classes, multiple difficulty levels, and a turn-based combat flow. The game combines classic tower crawler elements with modern web technology and AI integration for chat and story interactions.
 
-Wichtige Gameplay-Bausteine:
+Key gameplay elements:
 
-- Drei Klassen: Warrior, Archer, Druid
-- Turm-Fortschritt über mehrere Etagen je nach Schwierigkeit
-- Rundenbasierte Kämpfe mit normalen und Spezialangriffen
-- Bosskämpfe in regelmäßigen Abständen
-- Gold, Waffen, Upgrades und Fortschritt pro Session
-- Chat-basierte Interaktion über Web API, MCP Tool und n8n
+- Three classes: Warrior, Archer, Druid
+- Tower progression across multiple floors depending on difficulty
+- Turn-based battles with normal and special attacks
+- Boss fights at regular intervals
+- Gold, weapons, upgrades, and progress per session
+- Chat-based interaction through Web API, MCP Tool, and n8n
 
-## Technischer Überblick
+## Technical Overview
 
-Ein zentrales Architekturmerkmal von MagicTower ist die Trennung zwischen generativer Interaktion und deterministischer Systemausführung. Das Large Language Model übernimmt die narrative Führung, Dialoggestaltung und kontextbezogene Interpretation von Spieleraktionen. Die tatsächliche Ausführung spielrelevanter Operationen erfolgt jedoch nicht frei durch das Modell selbst, sondern kontrolliert über das MCP Tool. Dadurch werden generative Fähigkeiten in klar definierte, reproduzierbare und technisch überprüfbare Spielaktionen überführt. Das MCP Tool fungiert damit als Ausführungsschicht, die konsistente Regeln, stabile Zustandsübergänge und nachvollziehbare Spiellogik sicherstellt.
+A central architectural characteristic of MagicTower is the separation between generative interaction and deterministic system execution. The large language model handles narrative guidance, dialog design, and context-sensitive interpretation of player actions. The actual execution of gameplay-relevant operations, however, is not performed freely by the model itself, but in a controlled way through the MCP Tool. This turns generative capabilities into clearly defined, reproducible, and technically verifiable game actions. The MCP Tool therefore acts as the execution layer that ensures consistent rules, stable state transitions, and traceable game logic.
 
-Das Repository besteht aus mehreren Projekten, die gemeinsam das MagicTower-System bilden:
+The repository consists of several projects that together form the MagicTower system:
 
 - `MagicTower.AngularApp`
-  Angular-Frontend für die Benutzeroberfläche und die Kommunikation mit der Web API.
+  Angular frontend for the user interface and communication with the Web API.
 - `MagicTower.WebApi`
-  ASP.NET Core Web API für Spiellogik-Zugriffe, Persistenz, Chat-Endpunkte und Frontend-Anbindung.
+  ASP.NET Core Web API for game logic access, persistence, chat endpoints, and frontend integration.
 - `MagicTower.McpTool`
-  Separater MCP-Server für Tool-Aufrufe rund um den Game-Master-Flow.
+  Separate MCP server for tool calls related to the Game Master flow.
 - `MagicTower.Logic`
-  Domänenlogik, Entity Framework Core, Datenkontext und Spielmodule.
+  Domain logic, Entity Framework Core, data context, and game modules.
 - `MagicTower.Common`
-  Gemeinsame Contracts, Modelle und Hilfstypen.
+  Shared contracts, models, and helper types.
 - `MagicTower.ConApp`
-  Konsolenanwendung für Initialisierung, Datenbank-Setup und Hilfsfunktionen.
+  Console application for initialization, database setup, and helper functions.
 - `TemplateTools.ConApp`, `MagicTower.CodeGenApp`, `TemplateTools.Logic`
-  Werkzeuge für Code-Generierung und Template-basierte Entwicklung.
+  Tools for code generation and template-based development.
 
-## Technische Daten
+## Technical Stack
 
-- Backend: .NET 8 für Web API, Logic, Common und ConApp
+- Backend: .NET 8 for Web API, Logic, Common, and ConApp
 - MCP Tool: .NET 10
 - Frontend: Angular 19
-- UI-Basis: Bootstrap und Bootstrap Icons
-- Datenzugriff: Entity Framework Core
-- Standard-Datenbank in der aktuellen Konfiguration: SQLite
-- KI-Integration: n8n-Workflow mit externem LLM/Game-Master-Flow
+- UI foundation: Bootstrap and Bootstrap Icons
+- Data access: Entity Framework Core
+- Default database in the current configuration: SQLite
+- AI integration: n8n workflow with an external LLM/Game Master flow
 
-Standard-Ports in der aktuellen Entwicklungskonfiguration:
+Default ports in the current development configuration:
 
 - Angular App: `http://127.0.0.1:54091`
-- Web API: `http://localhost:5096` und `https://localhost:7074`
-- MCP Tool: `http://localhost:5087` und `https://localhost:7076`
+- Web API: `http://localhost:5096` and `https://localhost:7074`
+- MCP Tool: `http://localhost:5087` and `https://localhost:7076`
 - n8n: `http://localhost:5678`
 
-## Voraussetzungen
+## Prerequisites
 
-Bevor das Projekt lokal gestartet wird, sollten folgende Werkzeuge installiert sein:
+Before starting the project locally, the following tools should be installed:
 
 - .NET SDK 8
 - .NET SDK 10
-- Node.js und npm
-- Angular CLI optional, da `npm run start` die lokale CLI aus `node_modules` verwendet
+- Node.js and npm
+- Angular CLI is optional because `npm run start` uses the local CLI from `node_modules`
 - n8n
 - Git
 
-## Repository lokal einrichten
+## Set Up The Repository Locally
 
-### 1. Repository klonen
+### 1. Clone the repository
 
 ```powershell
 git clone <REPOSITORY-URL>
 cd MagicTower
 ```
 
-### 2. .NET-Abhängigkeiten wiederherstellen und Lösung bauen
+### 2. Restore .NET dependencies and build the solution
 
 ```powershell
 dotnet restore .\MagicTower.sln
 dotnet build .\MagicTower.sln
 ```
 
-### 3. Frontend-Abhängigkeiten installieren
+### 3. Install frontend dependencies
 
 ```powershell
 Set-Location .\MagicTower.AngularApp
@@ -90,38 +90,38 @@ npm install
 Set-Location ..
 ```
 
-### 4. Datenbank initialisieren
+### 4. Initialize the database
 
-Die Standardkonfiguration verwendet SQLite. Die Datenbank kann über die Konsolenanwendung initialisiert werden:
+The default configuration uses SQLite. The database can be initialized through the console application:
 
 ```powershell
 dotnet run --project .\MagicTower.ConApp\MagicTower.ConApp.csproj
 ```
 
-Beim ersten Start wird die Datenbank initialisiert. Die SQLite-Datei wird lokal im Projektkontext angelegt.
+On the first start, the database is initialized. The SQLite file is created locally within the project context.
 
-## Entwicklungsstart
+## Starting Development
 
-Für einen vollständigen lokalen Start werden in der Regel vier Prozesse benötigt:
+For a complete local start, four processes are usually required:
 
 1. Web API
 2. MCP Tool
 3. Angular Frontend
 4. n8n
 
-### Web API starten
+### Start the Web API
 
 ```powershell
 dotnet run --project .\MagicTower.WebApi\MagicTower.WebApi.csproj
 ```
 
-### MCP Tool starten
+### Start the MCP Tool
 
 ```powershell
 dotnet run --project .\MagicTower.McpTool\MagicTower.McpTool.csproj
 ```
 
-### Angular App starten
+### Start the Angular app
 
 ```powershell
 Set-Location .\MagicTower.AngularApp
@@ -129,21 +129,21 @@ npm run start
 Set-Location ..
 ```
 
-### n8n starten
+### Start n8n
 
 ```powershell
 n8n start
 ```
 
-## Start in VS Code
+## Start In VS Code
 
-In der Datei `.vscode/launch.json` ist bereits ein Compound für den parallelen Debug-Start von Web API und MCP Tool vorhanden:
+A compound configuration for starting the Web API and MCP Tool in parallel is already available in `.vscode/launch.json`:
 
 - `WebApi + McpTool`
 
-Dieses Compound kann in VS Code über Run and Debug ausgewählt und mit `F5` gestartet werden.
+This compound can be selected in VS Code under Run and Debug and started with `F5`.
 
-## Empfohlene Startreihenfolge
+## Recommended Startup Order
 
 1. `dotnet build .\MagicTower.sln`
 2. `dotnet run --project .\MagicTower.ConApp\MagicTower.ConApp.csproj`
@@ -152,13 +152,13 @@ Dieses Compound kann in VS Code über Run and Debug ausgewählt und mit `F5` ges
 5. `Set-Location .\MagicTower.AngularApp; npm run start`
 6. `n8n start`
 
-Danach ist die Anwendung in der Regel unter diesen URLs erreichbar:
+After that, the application is usually available at these URLs:
 
 - Frontend: `http://127.0.0.1:54091`
 - API: `http://localhost:5096/api`
 - n8n Editor: `http://localhost:5678`
 
-## Projektstruktur auf einen Blick
+## Project Structure At A Glance
 
 ```text
 MagicTower/
@@ -174,14 +174,14 @@ MagicTower/
 |- MagicTower.sln
 ```
 
-## Hinweise für neue Entwickler
+## Notes For New Developers
 
-- Die Lösung kombiniert manuell geschriebenen und generierten Code.
-- Änderungen an Entitäten und generierten Bereichen sollten im Kontext der vorhandenen Template- und Generator-Tools erfolgen.
-- Für den Spiel- und Chat-Flow sind Web API, MCP Tool und n8n gemeinsam relevant.
-- Für Frontend-Entwicklung reicht häufig Web API plus Angular App; für den vollständigen KI-gestützten Flow wird zusätzlich n8n benötigt.
+- The solution combines manually written and generated code.
+- Changes to entities and generated areas should be made in the context of the existing template and generator tools.
+- Web API, MCP Tool, and n8n are all relevant for the gameplay and chat flow.
+- For frontend development, Web API plus Angular App is often sufficient; for the full AI-assisted flow, n8n is additionally required.
 
-## Nützliche Befehle
+## Useful Commands
 
 ```powershell
 dotnet build .\MagicTower.sln
@@ -195,4 +195,4 @@ n8n start
 
 ## Status
 
-MagicTower ist als kombinierte Spiel-, API- und Tooling-Lösung aufgebaut. Das Repository enthält sowohl das eigentliche Spielsystem als auch Generator- und Support-Projekte für die weitere Entwicklung.
+MagicTower is designed as a combined game, API, and tooling solution. The repository contains both the actual game system and generator and support projects for further development.
