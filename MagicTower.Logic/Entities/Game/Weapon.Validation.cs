@@ -1,4 +1,4 @@
-//@CustomCode
+#if GENERATEDCODE_ON
 using MagicTower.Logic.Contracts;
 using MagicTower.Common.Modules.Exceptions;
 using Microsoft.EntityFrameworkCore;
@@ -48,3 +48,4 @@ namespace MagicTower.Logic.Entities.Game
         }
     }
 }
+#endif

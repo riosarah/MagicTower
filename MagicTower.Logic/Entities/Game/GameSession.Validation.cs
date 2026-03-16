@@ -1,3 +1,4 @@
+#if GENERATEDCODE_ON
 ////@CustomCode
 //using MagicTower.Logic.Contracts;
 //using MagicTower.Common.Modules.Exceptions;
@@ -48,3 +49,4 @@
 //        }
 //    }
 //}
+#endif
