@@ -1,3 +1,4 @@
+#if GENERATEDCODE_ON
 //@CustomCode
 namespace MagicTower.WebApi.Models
 {
@@ -383,3 +384,4 @@ namespace MagicTower.WebApi.Models
 
     #endregion
 }
+#endif
