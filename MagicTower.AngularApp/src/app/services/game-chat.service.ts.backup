@@ -1,0 +1,209 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+export interface ChatRequest {
+  message: string;
+  characterId?: number;
+  gameSessionId?: number;
+  conversationHistory: ChatMessage[];
+}
+
+export interface ChatResponse {
+  response: string;
+  gameState?: GameStateDto;
+}
+
+export interface GameStateDto {
+  character?: any;
+  gameSession?: any;
+  currentEnemy?: any;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  error?: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class GameChatService {
+  private baseUrl = `${environment.apiBaseUrl}/api/GameMcp`;
+  private maxHistoryLength = 10;
+
+  // Observables für Echtzeit-Updates
+  private conversationHistorySubject = new BehaviorSubject<ChatMessage[]>([]);
+  public conversationHistory$ = this.conversationHistorySubject.asObservable();
+
+  private gameStateSubject = new BehaviorSubject<GameStateDto | null>(null);
+  public gameState$ = this.gameStateSubject.asObservable();
+
+  private characterIdSubject = new BehaviorSubject<number | null>(null);
+  private gameSessionIdSubject = new BehaviorSubject<number | null>(null);
+
+  constructor(private http: HttpClient) {}
+
+  /**
+   * Sendet User-Nachricht an Chat-Endpoint
+   */
+  sendMessage(message: string): Observable<ApiResponse<ChatResponse>> {
+    console.log('=== SENDING CHAT MESSAGE ===');
+    console.log('Message:', message);
+    console.log('Current Character ID:', this.characterIdSubject.value);
+    console.log('Current Session ID:', this.gameSessionIdSubject.value);
+
+    const userMessage: ChatMessage = {
+      role: 'user',
+      content: message,
+      timestamp: new Date()
+    };
+
+    // User-Nachricht zur History hinzufügen
+    this.addMessageToHistory(userMessage);
+
+    const request: ChatRequest = {
+      message: message,
+      characterId: this.characterIdSubject.value ?? undefined,
+      gameSessionId: this.gameSessionIdSubject.value ?? undefined,
+      conversationHistory: this.conversationHistorySubject.value.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp
+      }))
+    };
+
+    console.log('Chat Request:', request);
+
+    return this.http.post<ApiResponse<ChatResponse>>(
+      `${this.baseUrl}/chat`,
+      request
+    ).pipe(
+      tap(response => {
+        console.log('Chat Response:', response);
+        if (response.success && response.data) {
+          // AI-Antwort zur History hinzufügen (ohne JSON-Blöcke)
+          const aiMessage: ChatMessage = {
+            role: 'assistant',
+            content: this.removeJsonBlocks(response.data.response),
+            timestamp: new Date()
+          };
+          this.addMessageToHistory(aiMessage);
+
+          // Game State aktualisieren
+          if (response.data.gameState) {
+            console.log('Updating Game State:', response.data.gameState);
+            this.gameStateSubject.next(response.data.gameState);
+
+            // Character ID & Session ID extrahieren
+            if (response.data.gameState.character) {
+              const charId = response.data.gameState.character.id;
+              console.log('Setting Character ID:', charId);
+              this.characterIdSubject.next(charId);
+            }
+            if (response.data.gameState.gameSession) {
+              const sessId = response.data.gameState.gameSession.id;
+              console.log('Setting Session ID:', sessId);
+              this.gameSessionIdSubject.next(sessId);
+            }
+          }
+        }
+      })
+    );
+  }
+
+  /**
+   * Fügt Nachricht zur Conversation History hinzu (max 10 Nachrichten)
+   */
+  private addMessageToHistory(message: ChatMessage): void {
+    const currentHistory = this.conversationHistorySubject.value;
+    const updatedHistory = [...currentHistory, message];
+
+    // Nur die letzten X Nachrichten behalten
+    if (updatedHistory.length > this.maxHistoryLength) {
+      updatedHistory.splice(0, updatedHistory.length - this.maxHistoryLength);
+    }
+
+    this.conversationHistorySubject.next(updatedHistory);
+  }
+
+  /**
+   * Entfernt JSON-Blöcke aus der Nachricht (alles zwischen { und })
+   */
+  private removeJsonBlocks(text: string): string {
+    // Regex um JSON-Blöcke zu entfernen (auch mehrzeilige)
+    // Findet { ... } Blöcke und entfernt sie
+    return text.replace(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g, '').trim();
+  }
+
+  /**
+   * Setzt den Chat zurück (für neues Spiel)
+   */
+  resetChat(): void {
+    console.log('=== RESET CHAT ===');
+    this.conversationHistorySubject.next([]);
+    this.gameStateSubject.next(null);
+    this.characterIdSubject.next(null);
+    this.gameSessionIdSubject.next(null);
+  }
+
+  /**
+   * Gibt aktuelle Character-ID zurück
+   */
+  getCurrentCharacterId(): number | null {
+    return this.characterIdSubject.value;
+  }
+
+  /**
+   * Gibt aktuelle Session-ID zurück
+   */
+  getCurrentSessionId(): number | null {
+    return this.gameSessionIdSubject.value;
+  }
+
+  /**
+   * Gibt aktuelle Character ID zurück (Alias)
+   */
+  getCharacterId(): number | null {
+    return this.characterIdSubject.value;
+  }
+
+  /**
+   * Gibt aktuelle Session ID zurück (Alias)
+   */
+  getSessionId(): number | null {
+    return this.gameSessionIdSubject.value;
+  }
+
+  /**
+   * Setzt Character ID manuell
+   */
+  setCharacterId(characterId: number): void {
+    console.log('=== SETTING CHARACTER ID ===', characterId);
+    this.characterIdSubject.next(characterId);
+  }
+
+  /**
+   * Lädt existierenden Character
+   */
+  loadExistingCharacter(characterId: number, sessionId?: number): void {
+    console.log('=== LOAD EXISTING CHARACTER ===');
+    console.log('Character ID:', characterId);
+    console.log('Session ID:', sessionId);
+    
+    this.characterIdSubject.next(characterId);
+    if (sessionId) {
+      this.gameSessionIdSubject.next(sessionId);
+    }
+  }
+}

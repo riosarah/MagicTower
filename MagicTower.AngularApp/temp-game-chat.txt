@@ -1,0 +1,279 @@
+﻿<div class="game-chat-container">
+  <div class="container-fluid h-100">
+    <!-- Header -->
+    <div class="game-header">
+      <h2>
+        <i class="bi bi-tower"></i> Magic Tower - KI Adventure
+      </h2>
+      <button class="btn btn-sm btn-secondary" (click)="goToHome()">
+        <i class="bi bi-house-fill"></i> Home
+      </button>
+    </div>
+
+    <!-- Top Section: Character vs Enemy -->
+    <div class="battle-status-row" *ngIf="gameState?.character || gameState?.currentEnemy">
+      <div class="row g-3">
+        <!-- Character Status -->
+        <div class="col-md-6">
+          <div class="status-card character-status" *ngIf="gameState?.character">
+            <div class="status-header bg-primary">
+              <i class="bi bi-person-circle"></i>
+              <span>{{ gameState?.character?.name }}</span>
+              <span class="badge bg-light text-dark ms-2">{{ gameState?.character?.className }}</span>
+            </div>
+            <div class="status-body">
+              <div class="stat-row">
+                <span class="stat-label">Level</span>
+                <span class="stat-value badge bg-primary">{{ gameState?.character?.level }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">
+                  <i class="bi bi-heart-fill text-danger"></i> Gesundheit
+                </span>
+                <span class="stat-value">{{ gameState?.character?.currentHealth }}/{{ gameState?.character?.maxHealth }}</span>
+              </div>
+              <div class="progress mb-2">
+                <div 
+                  class="progress-bar" 
+                  [ngClass]="getHealthBarClass(getHealthPercentage(gameState?.character?.currentHealth || 0, gameState?.character?.maxHealth || 1))"
+                  role="progressbar" 
+                  [style.width.%]="getHealthPercentage(gameState?.character?.currentHealth || 0, gameState?.character?.maxHealth || 1)">
+                </div>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">
+                  <i class="bi bi-lightning-fill text-warning"></i> Angriffskraft
+                </span>
+                <span class="stat-value text-warning">{{ gameState?.character?.totalAttackPower || gameState?.character?.attackPower }}</span>
+              </div>
+              <div class="stat-row" *ngIf="gameState?.character?.specialAttackLevel">
+                <span class="stat-label">
+                  <i class="bi bi-star-fill text-info"></i> Spezial Level
+                </span>
+                <span class="stat-value text-info">{{ gameState?.character?.specialAttackLevel }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enemy Status -->
+        <div class="col-md-6">
+          <div class="status-card enemy-status" *ngIf="gameState?.currentEnemy">
+            <div class="status-header bg-danger">
+              <i class="bi bi-shield-fill-exclamation"></i>
+              <span>{{ gameState?.currentEnemy?.displayName || gameState?.currentEnemy?.race + ' ' + gameState?.currentEnemy?.type }}</span>
+              <span class="badge bg-warning text-dark ms-2" *ngIf="gameState?.currentEnemy?.isBoss">
+                <i class="bi bi-trophy-fill"></i> BOSS
+              </span>
+            </div>
+            <div class="status-body">
+              <div class="stat-row">
+                <span class="stat-label">Level</span>
+                <span class="stat-value badge bg-danger">{{ gameState?.currentEnemy?.level }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">
+                  <i class="bi bi-heart-fill text-danger"></i> Gesundheit
+                </span>
+                <span class="stat-value">{{ gameState?.currentEnemy?.health }}/{{ gameState?.currentEnemy?.maxHealth }}</span>
+              </div>
+              <div class="progress mb-2">
+                <div 
+                  class="progress-bar bg-danger" 
+                  role="progressbar" 
+                  [style.width.%]="getHealthPercentage(gameState?.currentEnemy?.health || 0, gameState?.currentEnemy?.maxHealth || 1)">
+                </div>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">
+                  <i class="bi bi-lightning-fill text-warning"></i> Angriffskraft
+                </span>
+                <span class="stat-value text-warning">{{ gameState?.currentEnemy?.attackPower }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">
+                  <i class="bi bi-hammer"></i> Waffe
+                </span>
+                <span class="stat-value">{{ gameState?.currentEnemy?.weapon }}</span>
+              </div>
+              <div class="stat-row" *ngIf="gameState?.currentEnemy?.hasSpecialAttack">
+                <span class="badge bg-danger w-100">
+                  <i class="bi bi-star-fill"></i> Hat Spezialangriff!
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content: Inventory + Chat -->
+    <div class="row g-3 main-content-row">
+      <!-- Left: Inventory Panel -->
+      <div class="col-lg-3 inventory-panel">
+        
+        <!-- Tower Progress -->
+        <div class="inventory-card tower-progress" *ngIf="gameState?.gameSession">
+          <div class="inventory-header">
+            <i class="bi bi-building"></i> Turm Fortschritt
+          </div>
+          <div class="inventory-body">
+            <div class="floor-display">
+              <div class="floor-text">
+                <span class="current-floor">{{ gameState?.gameSession?.currentFloor }}</span>
+                <span class="floor-separator">/</span>
+                <span class="max-floor">{{ gameState?.gameSession?.maxFloor }}</span>
+              </div>
+              <div class="floor-label">Stockwerk</div>
+            </div>
+            <div class="progress mt-2">
+              <div 
+                class="progress-bar bg-info" 
+                role="progressbar" 
+                [style.width.%]="((gameState?.gameSession?.currentFloor || 0) / (gameState?.gameSession?.maxFloor || 1)) * 100">
+              </div>
+            </div>
+            <div class="difficulty-info mt-2">
+              <span class="badge bg-info">
+                Schwierigkeit: {{ gameState?.gameSession?.difficulty === 10 ? 'Easy' : gameState?.gameSession?.difficulty === 20 ? 'Medium' : 'Hard' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gold Display -->
+        <div class="inventory-card gold-display" *ngIf="gameState?.character">
+          <div class="inventory-header">
+            <i class="bi bi-coin"></i> Gold
+          </div>
+          <div class="inventory-body">
+            <div class="gold-amount">
+              <i class="bi bi-coin text-warning"></i>
+              <span>{{ gameState?.character?.gold }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weapons Inventory -->
+        <div class="inventory-card weapons-inventory" *ngIf="gameState?.character?.weapons && gameState?.character?.weapons.length > 0">
+          <div class="inventory-header">
+            <i class="bi bi-sword"></i> Waffen
+          </div>
+          <div class="inventory-body">
+            <div class="weapon-item" *ngFor="let weapon of gameState?.character?.weapons">
+              <div class="weapon-info">
+                <div class="weapon-name">
+                  <i class="bi bi-check-circle-fill text-success" *ngIf="weapon.isEquipped"></i>
+                  {{ weapon.name }}
+                </div>
+                <div class="weapon-details">
+                  <span class="badge bg-secondary">{{ weapon.type }}</span>
+                  <span class="badge bg-warning text-dark">+{{ weapon.damageBonus }} DMG</span>
+                  <span class="badge bg-info" *ngIf="weapon.upgradeLevel > 1">Lvl {{ weapon.upgradeLevel }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="inventory-card quick-actions" *ngIf="gameState?.currentEnemy">
+          <div class="inventory-header">
+            <i class="bi bi-lightning"></i> Schnellaktionen
+          </div>
+          <div class="inventory-body">
+            <button 
+              *ngFor="let action of quickActions"
+              class="btn btn-sm btn-outline-primary w-100 mb-2"
+              (click)="useQuickAction(action)"
+              [disabled]="isLoading">
+              {{ action.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- New Game Button -->
+        <button 
+          class="btn btn-success w-100 mt-3"
+          (click)="startNewGame()"
+          [disabled]="isLoading">
+          <i class="bi bi-plus-circle"></i> Neues Spiel
+        </button>
+      </div>
+
+      <!-- Right: Chat Panel -->
+      <div class="col-lg-9 chat-panel">
+        <!-- Chat Header -->
+        <div class="chat-header">
+          <h3>
+            <i class="bi bi-chat-dots-fill"></i>
+            KI Game Master Chat
+          </h3>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="chat-messages" #chatMessages>
+          <div *ngFor="let message of conversationHistory" 
+               class="message-wrapper"
+               [class.user-message-wrapper]="message.role === 'user'"
+               [class.ai-message-wrapper]="message.role === 'assistant'">
+            <div class="message-bubble"
+                 [class.user-message]="message.role === 'user'"
+                 [class.ai-message]="message.role === 'assistant'">
+              <div class="message-icon">
+                <i *ngIf="message.role === 'user'" class="bi bi-person-circle"></i>
+                <i *ngIf="message.role === 'assistant'" class="bi bi-robot"></i>
+              </div>
+              <div class="message-content">
+                <div class="message-text" [innerHTML]="message.content | lineBreaks"></div>
+                <div class="message-timestamp">
+                  {{ message.timestamp | date:'HH:mm:ss' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="isLoading" class="message-wrapper ai-message-wrapper">
+            <div class="message-bubble ai-message loading-message">
+              <div class="message-icon">
+                <i class="bi bi-robot"></i>
+              </div>
+              <div class="message-content">
+                <div class="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <small class="text-muted">KI denkt nach...</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-input-area">
+          <div class="input-group">
+            <input 
+              type="text" 
+              class="form-control chat-input" 
+              [(ngModel)]="userInput" 
+              (keyup.enter)="sendMessage()"
+              placeholder="Schreibe deine Nachricht... (z.B. 'Ich greife an!', 'Status zeigen')"
+              [disabled]="isLoading">
+            <button 
+              class="btn btn-primary send-btn" 
+              (click)="sendMessage()"
+              [disabled]="isLoading || !userInput.trim()">
+              <i class="bi bi-send-fill"></i>
+              Senden
+            </button>
+          </div>
+          <small class="text-muted mt-2 d-block">
+            ðŸ’¡ Tipp: Schreibe natÃ¼rliche SÃ¤tze wie "Ich greife den Troll an" oder "Zeige mir meinen Status"
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
