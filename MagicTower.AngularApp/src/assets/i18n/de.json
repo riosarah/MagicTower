@@ -1,0 +1,130 @@
+{
+  "APP": {
+    "TITLE": "SETemplate",
+    "BRAND": "SETemplate"
+  },
+  "NAVIGATION": {
+    "DASHBOARD": "Dashboard"
+  },
+  "AUTH": {
+    "LOGIN": "Anmelden",
+    "LOGOUT": "Abmelden",
+    "EMAIL": "E-Mail",
+    "PASSWORD": "Passwort",
+    "LOGIN_ERROR": "Anmeldung fehlgeschlagen"
+  },
+  "COMMON": {
+    "SAVE": "Speichern",
+    "CANCEL": "Abbrechen",
+    "DELETE": "Löschen",
+    "EDIT": "Bearbeiten",
+    "ADD": "Hinzufügen",
+    "CLOSE": "Schließen",
+    "REFRESH": "Aktualisieren",
+    "SEARCH": "Suchen",
+    "SEARCH_PLACEHOLDER": "Suche...",
+    "CONFIRM": "Bestätigen",
+    "YES": "Ja",
+    "NO": "Nein",
+    "OK": "OK",
+    "DELETE_CONFIRM": "Möchten Sie den Eintrag '{{item}}' löschen?",
+    "DELETE_TITLE": "Löschen bestätigen"
+  },
+  "DASHBOARD": {
+    "TITLE": "Dashboard",
+    "WELCOME": "Willkommen im SETemplate!",
+    "PUBLIC_ACCESS": "Öffentlicher Zugang",
+    "PROTECTED_AREA": "Geschützter Bereich",
+    "STATISTICS": "Statistiken",
+    "RECENT_ACTIVITIES": "Letzte Aktivitäten",
+    "CARDS": {
+      "DASHBOARD_TITLE": "Dashboard",
+      "DASHBOARD_TEXT": "Übersicht"
+    }
+  },
+  "MESSAGE_BOX": {
+    "TITLE": "Hinweis",
+    "CONFIRM_TITLE": "Bitte bestätigen",
+    "CONFIRM": "Bestätigen",
+    "CANCEL": "Abbrechen",
+    "OK": "OK",
+    "CLOSE": "Schließen",
+    "YES": "Ja",
+    "NO": "Nein",
+    "SHOW_DETAILS": "Details anzeigen",
+    "HIDE_DETAILS": "Details ausblenden",
+    "DETAILS": "Details"
+  },
+  "ERRORS": {
+    "GENERAL": "Ein Fehler ist aufgetreten",
+    "NETWORK": "Netzwerkfehler",
+    "VALIDATION": "Validierungsfehler",
+    "NOT_FOUND": "Nicht gefunden",
+    "UNAUTHORIZED": "Nicht autorisiert",
+    "CREATE_FAILED": "Fehler beim Erstellen",
+    "SAVE_FAILED": "Fehler beim Speichern",
+    "DELETE_FAILED": "Fehler beim Löschen"
+  },
+  "LANGUAGE": {
+    "TITLE": "Sprache"
+  },
+  "THEME": {
+    "TITLE": "Design",
+    "LIGHT": "Hell",
+    "DARK": "Dunkel",
+    "SWITCH_TO_LIGHT": "Zu hellem Design wechseln",
+    "SWITCH_TO_DARK": "Zu dunklem Design wechseln"
+  },
+  "HOME": {
+    "NEW_GAME": "Neues Spiel",
+    "NEW_GAME_DESC": "Erstelle einen neuen Charakter und starte dein Abenteuer",
+    "START_NEW": "Neues Spiel starten",
+    "CHAT_GAME": "Chat-Gameplay",
+    "CHAT_GAME_DESC": "Spiele über Chat mit KI-gesteuertem Game Master (Gemini AI)",
+    "START_CHAT": "Chat starten",
+    "CONTINUE_GAME": "Spiel fortsetzen",
+    "CONTINUE_GAME_DESC": "Wähle einen bestehenden Charakter und setze deine Reise fort",
+    "NO_CHARACTERS": "Keine Charaktere vorhanden. Erstelle einen neuen Charakter!"
+  },
+  "CHARACTER_CREATION": {
+    "TITLE": "Charaktererstellung",
+    "SUBTITLE": "Erschaffe deinen Helden für das Abenteuer im magischen Turm",
+    "NAME_STEP": "Wähle einen Namen",
+    "NAME_LABEL": "Charaktername",
+    "NAME_PLACEHOLDER": "Gib einen Namen ein...",
+    "CLASS_STEP": "Wähle deine Klasse",
+    "CLASS_LABEL": "Klasse",
+    "DIFFICULTY_STEP": "Wähle die Schwierigkeit",
+    "DIFFICULTY_LABEL": "Schwierigkeit",
+    "FLOORS": "Stockwerke",
+    "SUMMARY": "Zusammenfassung",
+    "CANCEL": "Abbrechen",
+    "START_ADVENTURE": "Abenteuer starten",
+    "CREATING": "Wird erstellt..."
+  },
+  "COMBAT": {
+    "HEALTH": "Gesundheit",
+    "ATTACK": "Angriff",
+    "SPECIAL_ATTACK": "Spezialangriff",
+    "SPECIAL_AVAILABLE": "Spezial verfügbar",
+    "GOLD": "Gold",
+    "CURRENT_FLOOR": "Aktuelles Stockwerk",
+    "WEAPONS": "Waffen",
+    "LEVEL": "Level",
+    "WEAPON": "Waffe",
+    "HAS_SPECIAL": "Hat Spezialangriff",
+    "NORMAL_ATTACK": "Normaler Angriff",
+    "START_FIGHT": "Kampf starten",
+    "READY_FOR_BATTLE": "Bereit für den Kampf",
+    "NEXT_FLOOR_MESSAGE": "Betritt das nächste Stockwerk und stelle dich einem neuen Gegner",
+    "REWARDS": "Belohnungen",
+    "CONTINUE": "Weiter",
+    "COMBAT_LOG": "Kampfprotokoll",
+    "NO_ACTIONS_YET": "Noch keine Aktionen ausgeführt",
+    "BACK_HOME": "Zurück zum Start",
+    "VICTORY": "Sieg!",
+    "VICTORY_MESSAGE": "Glückwunsch! Du hast den magischen Turm bezwungen!",
+    "DEFEAT": "Niederlage",
+    "DEFEAT_MESSAGE": "Du wurdest besiegt. Versuche es erneut mit einem neuen Charakter!"
+  }
+}
