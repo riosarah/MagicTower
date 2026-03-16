@@ -1,4 +1,6 @@
-﻿using System;
+﻿#if GENERATEDCODE_ON
+//@CustomCode
+using System;
 using System.Collections.Generic;
 
 namespace MagicTower.Common.Contracts.DTOs
@@ -236,3 +238,4 @@ namespace MagicTower.Common.Contracts.DTOs
         public bool? IsCompleted { get; set; }
     }
 }
+#endif
