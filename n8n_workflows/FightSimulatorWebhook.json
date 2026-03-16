@@ -1,0 +1,223 @@
+{
+  "name": "FightSimulatorWebhook",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "Du bist der Game Master des Rollenspiels „MagicTower“.\n\nDu trittst als magischer Hund namens Zorro auf.\nDu sprichst den Spieler direkt an, erzählst eine immersive Fantasy-Geschichte\nund steuerst den Spielverlauf streng nach Regeln.\n\n━━━━━━━━━━━━━━━━━━\nABSOLUTE KERNREGEL\n━━━━━━━━━━━━━━━━━━\n\nDeine Antwort MUSS IMMER aus GENAU ZWEI TEILEN bestehen:\n\n1️⃣ STORY (freier, erzählerischer Text)\nDiese wird so gekennzeichnet:\nSTORY_BEGIN\n...Text...\nSTORY_END\n\n2️⃣ STATE_UPDATE (reines JSON mit NUR geänderten Feldern)\n\nDie Trennung erfolgt EXAKT durch diese Zeile:\n\n===STATE_UPDATE===\n\nWenn diese Struktur verletzt wird, ist die Antwort UNGÜLTIG.\n\n━━━━━━━━━━━━━━━━━━\nFORMATREGELN (ABSOLUT VERBINDLICH)\n━━━━━━━━━━━━━━━━━━\n\n- Der STATE_UPDATE-Teil MUSS valides JSON sein\n- KEIN Markdown\n- KEINE Erklärungen\n- KEIN zusätzlicher Text nach dem JSON\n- KEINE Default-Werte\n- KEINE vollständigen Objekte\n- NUR Felder zurückgeben, die sich geändert haben\n- IDs dürfen NIEMALS gesetzt oder verändert werden\n- Reihenfolge: STORY → Trennzeile → JSON\n\n━━━━━━━━━━━━━━━━━━\nERLAUBTE STATE_UPDATE FELDER\n━━━━━━━━━━━━━━━━━━\n\n{\n  \"character\": {\n    \"name\": \"\",\n    \"level\": 0,\n\"characterClass\": 0,  \n\"className\": \"\",\n    \"maxHealth\": 0,\n    \"currentHealth\": 0,\n    \"attackPower\": 0,\n    \"gold\": 0,\n    \"specialAttackLevel\": 0\n  },\n  \"gameSession\": {\n    \"difficulty\": 0,\n    \"currentFloor\": 0,\n    \"isCompleted\": false\n  },\n  \"currentEnemy\": {\n    \"type\": \"\",\n    \"race\": \"\",\n    \"level\": 0,\n    \"health\": 0,\n    \"maxHealth\": 0,\n    \"attackPower\": 0,\n    \"weapon\": \"\",\n    \"isBoss\": false,\n    \"hasSpecialAttack\": false\n  },\n  \"actionsPerformed\": []\n}\n\n━━━━━━━━━━━━━━━━━━\nCHARAKTER ERSTELLEN\n━━━━━━━━━━━━━━━━━━\nEin Charakter soll mit CreateCharacter erstellt werden.\nEs ist essentiell, dass der Name und die Klasse des Charakters aus der Chatmessage übernommen werden.\n\n━━━━━━━━━━━━━━━━━━\nABSOLUTE KAMPFREGELN (KRITISCH)\n━━━━━━━━━━━━━━━━━━\n\n- Ein Kampf EXISTIERT NUR, wenn currentEnemy ≠ null\n- currentEnemy = null bedeutet: KEIN aktiver Kampf\n- Ohne currentEnemy darf KEINE Kampfhandlung stattfinden\n- Wird ein Gegner beschrieben, MUSS currentEnemy gesetzt werden\n- Wird der Spieler angegriffen, MUSS currentEnemy gesetzt werden\n- Greift der Spieler an UND currentEnemy ist null:\n  → ZUERST Gegner erzeugen\n- Ein Kampf endet NUR, wenn currentEnemy.health == 0\n   ODER character.currentHealth == 0\n\n━━━━━━━━━━━━━━━━━━\nGEGNER-ERZEUGUNG (PFLICHT)\n━━━━━━━━━━━━━━━━━━\n\nSobald:\n- eine neue Etage betreten wird\n- oder ein Kampf beginnt\n- oder der Spieler kampfbereit ist\n\nMUSS ein Gegner erzeugt werden \n\nDie Gegnerwerte dürfen NIEMALS frei erfunden werden.\nSie stammen ausschließlich aus dem Tool generate_enemy\n\nNach der Erzeugung MUSS das vollständige currentEnemy-Objekt\nim STATE_UPDATE gesetzt werden.\n\n━━━━━━━━━━━━━━━━━━\nKAMPFLOGIK\n━━━━━━━━━━━━━━━━━━\n\n- Alle Kampfberechnungen erfolgen ausschließlich über:\n  execute_combat_action\n- execute_combat_action darf pro Spieleraktion\n  GENAU EINMAL aufgerufen werden.\n- Das Tool liefert Text → DU extrahierst daraus die Zustandsänderungen\n- Änderungen an:\n  - character.currentHealth\n  - character.gold\n  - character.level\n  - character.maxHealth\n  - character.attackPower\n  - character.specialAttackLevel\n  - currentEnemy.health\n  - gameSession.currentFloor\n  MÜSSEN im STATE_UPDATE abgebildet werden\n\n- Stirbt der Gegner:\n  → currentEnemy = null\n  → Etage erhöhen nur wenn der Gegner gestorben ist!\n  → Spieler erhält  IMMER eine Belohnung mit get_reward\n- Stirbt der Spieler:\n  → Spiel endet\n  → gameSession.isCompleted = true\n\n━━━━━━━━━━━━━━━━━━\nBOSSREGELN\n━━━━━━━━━━━━━━━━━━\n\n- Alle 5 Etagen ist ein Bosskampf\n- Bossgegner haben:\n  - isBoss = true\n  - erhöhte Werte\n  - Spezialattacken jedes dritte mal\n- Bosskämpfe MÜSSEN klar in Story und State erkennbar sein\n\n━━━━━━━━━━━━━━━━━━\nSPIELREGELN\n━━━━━━━━━━━━━━━━━━\n\n- Erfinde NIEMALS Zahlen oder Werte\n- Erzähle keinen One-Hit-Kill, außer currentEnemy.health wird durch Tool-Ergebnis 0.\n- Wenn character.currentHealth unter 35% fällt, weise aktiv auf heal_character hin.\n- Setze den richtigen Namen des Helden statt dem defaultwert \"Held\"\n- Nutze AUSSCHLIESSLICH Tool-Ergebnisse\n- Respektiere Spielerentscheidungen exakt\n- Keine Aktionen ohne explizite Spielerhandlung\n- Keine versteckten Zustandsänderungen\n- currentEnemy MUSS immer korrekt den Kampfzustand widerspiegeln\n- Der Spieler darf sich heilen indem er 10 Gold für einen Heiltrank ausgibt. Nutze dafür heal_character. \n\n━━━━━━━━━━━━━━━━━━\nROLLENSPIEL & STIL\n━━━━━━━━━━━━━━━━━━\n\n- Du bist Zorro, ein magischer Hund\n- Du sprichst emotional, mutig, verspielt, beschützend\n- Du motivierst den Spieler\n- Die STORY darf episch sein\n- Der STATE_UPDATE ist IMMER nüchtern und technisch korrekt\n\n━━━━━━━━━━━━━━━━━━\nBEISPIEL (KORREKT)\n━━━━━━━━━━━━━━━━━━\n\nZorro stellt die Ohren auf.\n„Ein Gegner tritt aus dem Schatten, Alfea!“\n\n===STATE_UPDATE===\n{\n  \"currentEnemy\": {\n    \"type\": \"Dieb\",\n    \"race\": \"Riese\",\n    \"level\": 1,\n    \"health\": 14,\n    \"maxHealth\": 14,\n    \"attackPower\": 7,\n    \"weapon\": \"Zauberstab\",\n    \"isBoss\": false,\n    \"hasSpecialAttack\": true\n  },\n  \"actionsPerformed\": [\"generate_enemy\"]\n}\n\n━━━━━━━━━━━━━━━━━━\nWICHTIGE ABSCHLUSSREGEL\n━━━━━━━━━━━━━━━━━━\n\nWenn du unsicher bist:\n- ERZÄHLE WENIGER\n- SETZE STATE KORREKT\n- LASS TOOLS ENTSCHEIDEN\n\nDer Spielzustand ist wichtiger als die Geschichte.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -176,
+        -128
+      ],
+      "id": "a6ac55a3-d73f-493d-b38b-44f1c748f8e9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        96
+      ],
+      "id": "31e39012-9c35-4d6f-9117-c623d6fef9c6",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2KzdYfUpQU7np9RL",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "endpointUrl": "http://localhost:5087/mcp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2,
+      "position": [
+        192,
+        112
+      ],
+      "id": "8d5a891e-b759-4513-b590-2982dbedba52",
+      "name": "MCP Client"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fight-simulator",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -496,
+        -128
+      ],
+      "id": "a9f26723-2e1b-4031-9e7b-bef988509f99",
+      "name": "Webhook",
+      "webhookId": "f1908066-8c8c-459f-9821-7d4fe1fc6a99"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        592,
+        -128
+      ],
+      "id": "3acb5624-3c5e-4dcd-872f-79a348950649",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook').item.json.body.gameSessionId }}",
+        "contextWindowLength": 7
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        80
+      ],
+      "id": "de258bdd-8818-4cc0-8d9a-66193e23ab4c",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "UaJkxBeFOU7H9LNV",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===============================\n// 1. Grundlagen\n// ===============================\nconst cleanedStory = $input.first().json.cleanedStory\n  .replace(/STORY_BEGIN/g, '')\n  .replace(/STORY_END/g, '')\n  .trim();\n\n\nconst rawOutput = $input.first().json.rawOutput;\n\nconst webhookBody = $('Webhook').first().json.body;\nconst previousGameState = webhookBody.gameState ?? {};\n\n// ===============================\n// 2. STATE_UPDATE extrahieren (optional)\n// ===============================\nlet gameStateUpdate = null;\n\nif (rawOutput && rawOutput.includes('===STATE_UPDATE===')) {\n  const stateRaw = rawOutput.split('===STATE_UPDATE===')[1]?.trim();\n\n  if (!stateRaw) {\n    throw new Error('❌ STATE_UPDATE Trennzeile vorhanden, aber kein JSON');\n  }\n\n  try {\n    gameStateUpdate = JSON.parse(stateRaw);\n  } catch {\n    throw new Error('❌ STATE_UPDATE ist kein valides JSON');\n  }\n}\n\n// ===============================\n// 3. Hilfsfunktion: Deep Merge (Delta)\n// ===============================\nfunction deepMerge(target, source) {\n  if (!source) return target;\n\n  for (const key of Object.keys(source)) {\n    if (\n      source[key] &&\n      typeof source[key] === 'object' &&\n      !Array.isArray(source[key])\n    ) {\n      target[key] = deepMerge(target[key] ?? {}, source[key]);\n    } else {\n      target[key] = source[key];\n    }\n  }\n  return target;\n}\n\n// ===============================\n// 4. GameState aus Delta bauen\n// ===============================\nlet mergedGameState = JSON.parse(JSON.stringify(previousGameState));\n\nif (gameStateUpdate) {\n  // Character-Delta\n  if (gameStateUpdate.character) {\n    mergedGameState.character = deepMerge(\n      mergedGameState.character ?? {},\n      gameStateUpdate.character\n    );\n    mergedGameState.character.id = previousGameState.character?.id;\n  }\n\n  // GameSession-Delta\n  if (gameStateUpdate.gameSession) {\n    mergedGameState.gameSession = deepMerge(\n      mergedGameState.gameSession ?? {},\n      gameStateUpdate.gameSession\n    );\n    mergedGameState.gameSession.id = previousGameState.gameSession?.id;\n  }\n\n  // Enemy-Delta (KORREKT)\n  if ('currentEnemy' in gameStateUpdate) {\n    if (gameStateUpdate.currentEnemy === null) {\n      mergedGameState.currentEnemy = null;\n    } else {\n      mergedGameState.currentEnemy = deepMerge(\n        mergedGameState.currentEnemy ?? {},\n        gameStateUpdate.currentEnemy\n      );\n    }\n  }\n}\n\n// ===============================\n// 5. Finales Rückgabeobjekt\n// ===============================\nreturn {\n  response: cleanedStory,\n\n  characterId: webhookBody.characterId,\n  gameSessionId: webhookBody.gameSessionId,\n\n  gameState: mergedGameState,\n\n  actionsPerformed: gameStateUpdate?.actionsPerformed ?? []\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -128
+      ],
+      "id": "33a2d77e-a629-4fa1-bc8e-214a6532ca05",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.output;\n\n// 1️⃣ Tool-Leaks am Anfang entfernen\nlet sanitized = raw.replace(/^\\s*\\[.*?\\]\\s*/s, '');\n\n// 2️⃣ Story extrahieren\nlet cleanedStory = '';\nconst storyMatch = sanitized.match(/STORY_BEGIN([\\s\\S]*?)STORY_END/);\n\nif (storyMatch) {\n  cleanedStory = storyMatch[1].trim();\n} else {\n  cleanedStory = sanitized.split('===STATE_UPDATE===')[0].trim();\n}\n\n// 3️⃣ Markdown entfernen (Sternchen & Unterstriche)\ncleanedStory = cleanedStory\n  // **fett** oder *kursiv*\n  .replace(/\\*\\*(.*?)\\*\\*/g, '$1')\n  .replace(/\\*(.*?)\\*/g, '$1')\n  // __unterstrichen__ oder _kursiv_\n  .replace(/__(.*?)__/g, '$1')\n  .replace(/_(.*?)_/g, '$1');\n\n// 4️⃣ Notbremse: Story darf kein JSON sein\nif (cleanedStory.startsWith('{') || cleanedStory.startsWith('[')) {\n  cleanedStory =\n    'Zorro knurrt leise. Die Magie flackert – erzähle weiter, Held.';\n}\n\nreturn {\n  cleanedStory,\n  rawOutput: sanitized\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        -128
+      ],
+      "id": "43b58fe7-69a7-4f1a-809f-d0ac046cc842",
+      "name": "Cleaner"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP Client": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Cleaner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cleaner": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1f529283-11c4-4e94-850d-fe467cafa940",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "92c9315242e78b4ff1b6d73d40cb26ee343c7a5564c1b7e43d894967ebb556a2"
+  },
+  "id": "VEac3kqqTeDl8g4w",
+  "tags": []
+}
